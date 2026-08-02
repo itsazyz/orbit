@@ -17,7 +17,7 @@ import {
 interface LanguageContextValue {
   lang: Language;
   dir: 'ltr' | 'rtl';
-  dict: Dictionary;
+  dict: any;
   setLang: (lang: Language) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
