@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getPostAuthPath } from '@/lib/profile/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
@@ -34,7 +35,12 @@ export default function SignInPage() {
       return;
     }
 
-    router.push(redirectTo as any);
+    const path =
+      redirectTo !== '/dashboard'
+        ? redirectTo
+        : await getPostAuthPath(supabase);
+
+    router.push(path as any);
     router.refresh();
   }
 

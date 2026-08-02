@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { computeAllStarLayouts } from "@/lib/universe/star-layout";
 import {
@@ -10,6 +11,8 @@ import {
   type StarVisualType,
 } from "@/lib/universe/visual-styles";
 import type { PlanetSurfaceStyle } from "@/types/database";
+import { loadPlanetForEditor } from "@/lib/profile/client";
+import { MusicPicker } from "@/components/create/MusicPicker";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 const RESERVED_USERNAMES = new Set([
@@ -29,7 +32,10 @@ type Star = {
 };
 
 export default function CreatePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [started, setStarted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -49,6 +55,47 @@ export default function CreatePage() {
 
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    async function init() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        router.replace("/auth/sign-in?redirectTo=/create");
+        return;
+      }
+
+      const existing = await loadPlanetForEditor(supabase);
+
+      if (existing) {
+        setName(existing.profile.display_name);
+        setUsername(existing.profile.username);
+        setBio(existing.profile.bio);
+        setPlanetColor(existing.profile.planet_color);
+        setPlanetSurface(existing.profile.planet_surface_style as PlanetSurfaceStyle);
+        setMusicEnabled(existing.profile.music_enabled);
+        setMusicUrl(existing.profile.music_url);
+        setStars(
+          existing.stars.map((star) => ({
+            id: star.id,
+            title: star.title,
+            content: star.content,
+            icon: star.icon,
+            visualType: star.visualType as StarVisualType,
+          }))
+        );
+        setIsEditing(true);
+        setStarted(true);
+      }
+
+      setLoading(false);
+    }
+
+    init();
+  }, [router]);
 
   function addStar() {
     if (!starTitle.trim()) {
@@ -262,14 +309,28 @@ export default function CreatePage() {
     }
   }
 
+  if (loading) {
+    return (
+      <main style={styles.main}>
+        <div style={{ ...styles.container, textAlign: "center", paddingTop: 80 }}>
+          <p style={{ color: "#aeb6cf" }}>Loading your universe…</p>
+        </div>
+      </main>
+    );
+  }
+
   if (started) {
     return (
       <main style={styles.main}>
         <div style={styles.container}>
-          <h1 style={styles.pageTitle}>Build your planet</h1>
+          <h1 style={styles.pageTitle}>
+            {isEditing ? "Customize your planet" : "Build your planet"}
+          </h1>
 
           <p style={styles.pageSubtitle}>
-            Add the details that represent your world.
+            {isEditing
+              ? "Update your world — changes appear on your public page."
+              : "Add the details that represent your world."}
           </p>
 
           <div style={styles.editorGrid}>
@@ -351,23 +412,13 @@ export default function CreatePage() {
                 ))}
               </div>
 
-              <label style={styles.label}>Background music (optional)</label>
-              <label style={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  checked={musicEnabled}
-                  onChange={(e) => setMusicEnabled(e.target.checked)}
-                />
-                <span>Play music for visitors at 30% volume</span>
-              </label>
-              {musicEnabled ? (
-                <input
-                  value={musicUrl}
-                  onChange={(e) => setMusicUrl(e.target.value)}
-                  placeholder="https://example.com/your-song.mp3"
-                  style={styles.input}
-                />
-              ) : null}
+              <label style={styles.label}>Background music</label>
+              <MusicPicker
+                enabled={musicEnabled}
+                onEnabledChange={setMusicEnabled}
+                musicUrl={musicUrl}
+                onMusicUrlChange={setMusicUrl}
+              />
 
               {/* STARS */}
               <div style={styles.starsHeader}>
@@ -560,7 +611,13 @@ export default function CreatePage() {
                   opacity: publishing ? 0.6 : 1,
                 }}
               >
-                {publishing ? "Publishing..." : "Publish my planet"}
+                {publishing
+                  ? isEditing
+                    ? "Saving..."
+                    : "Publishing..."
+                  : isEditing
+                    ? "Save changes"
+                    : "Publish my planet"}
               </button>
             </section>
 
@@ -701,13 +758,19 @@ export default function CreatePage() {
           </div>
 
           <div style={styles.backContainer}>
-            <button
-              type="button"
-              onClick={() => setStarted(false)}
-              style={styles.backButton}
-            >
-              ← Back
-            </button>
+            {isEditing ? (
+              <Link href="/dashboard" style={styles.homeLink}>
+                ← Back to dashboard
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setStarted(false)}
+                style={styles.backButton}
+              >
+                ← Back
+              </button>
+            )}
           </div>
         </div>
       </main>
