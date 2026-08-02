@@ -13,6 +13,7 @@ import {
 import type { PlanetSurfaceStyle } from "@/types/database";
 import { loadPlanetForEditor } from "@/lib/profile/client";
 import { MusicPicker } from "@/components/create/MusicPicker";
+import "./create.css";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 const RESERVED_USERNAMES = new Set([
@@ -316,8 +317,8 @@ export default function CreatePage() {
 
   if (loading) {
     return (
-      <main style={styles.main}>
-        <div style={{ ...styles.container, textAlign: "center", paddingTop: 80 }}>
+      <main style={styles.main} className="create-page">
+        <div style={{ ...styles.container, textAlign: "center", paddingTop: 80 }} className="create-container">
           <p style={{ color: "#aeb6cf" }}>Loading your universe…</p>
         </div>
       </main>
@@ -326,24 +327,25 @@ export default function CreatePage() {
 
   if (started) {
     return (
-      <main style={styles.main}>
-        <div style={styles.container}>
+      <main style={styles.main} className="create-page">
+        <div style={styles.container} className="create-container">
           <h1 style={styles.pageTitle}>
             {isEditing ? "Customize your planet" : "Build your planet"}
           </h1>
 
-          <p style={styles.pageSubtitle}>
+          <p style={styles.pageSubtitle} className="create-page-subtitle">
             {isEditing
               ? "Update your world — changes appear on your public page."
               : "Add the details that represent your world."}
           </p>
 
-          <div style={styles.editorGrid}>
+          <div style={styles.editorGrid} className="create-editor-grid">
             {/* LEFT SIDE */}
-            <section style={styles.panel}>
+            <section style={styles.panel} className="create-panel">
               <label style={styles.label}>Name</label>
 
               <input
+                className="create-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
@@ -367,12 +369,14 @@ export default function CreatePage() {
                   }
                   placeholder="aziz"
                   style={styles.usernameInput}
+                  className="create-input"
                 />
               </div>
 
               <label style={styles.label}>About you</label>
 
               <textarea
+                className="create-input"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell people about your world..."
@@ -399,7 +403,7 @@ export default function CreatePage() {
               </div>
 
               <label style={styles.label}>Planet surface</label>
-              <div style={styles.chipRow}>
+              <div style={styles.chipRow} className="create-chip-row">
                 {PLANET_SURFACE_OPTIONS.map((option) => (
                   <button
                     key={option.id}
@@ -426,7 +430,7 @@ export default function CreatePage() {
               />
 
               {/* STARS */}
-              <div style={styles.starsHeader}>
+              <div style={styles.starsHeader} className="create-stars-header">
                 <div>
                   <h2 style={styles.sectionTitle}>Your stars</h2>
 
@@ -447,6 +451,7 @@ export default function CreatePage() {
                     opacity: stars.length >= 20 ? 0.5 : 1,
                     cursor: stars.length >= 20 ? "not-allowed" : "pointer",
                   }}
+                  className="create-add-star-btn"
                 >
                   + Add star
                 </button>
@@ -454,7 +459,7 @@ export default function CreatePage() {
 
               {/* STAR FORM */}
               {showStarForm && (
-                <div style={styles.starForm}>
+                <div style={styles.starForm} className="create-star-form">
                   <h3 style={styles.formTitle}>Create a star</h3>
 
                   <label style={styles.label}>Icon</label>
@@ -487,7 +492,7 @@ export default function CreatePage() {
                   </div>
 
                   <label style={styles.label}>Star shape</label>
-                  <div style={styles.chipRow}>
+                  <div style={styles.chipRow} className="create-chip-row">
                     {STAR_VISUAL_OPTIONS.map((option) => (
                       <button
                         key={option.id}
@@ -531,7 +536,7 @@ export default function CreatePage() {
                     }}
                   />
 
-                  <div style={styles.formButtons}>
+                  <div style={styles.formButtons} className="create-form-buttons">
                     <button
                       type="button"
                       onClick={() => {
@@ -579,7 +584,7 @@ export default function CreatePage() {
                       </div>
 
                       <div style={styles.starCardContent}>
-                        <h3 style={styles.starCardTitle}>
+                        <h3 style={styles.starCardTitle} className="create-star-card-title">
                           {star.title}
                         </h3>
 
@@ -615,6 +620,7 @@ export default function CreatePage() {
                   ...styles.publishButton,
                   opacity: publishing ? 0.6 : 1,
                 }}
+                className="create-publish-btn"
               >
                 {publishing
                   ? isEditing
@@ -627,10 +633,10 @@ export default function CreatePage() {
             </section>
 
             {/* PREVIEW */}
-            <section style={styles.preview}>
+            <section style={styles.preview} className="create-preview">
               <div style={styles.previewLabel}>LIVE PREVIEW</div>
 
-              <div style={styles.space}>
+              <div style={styles.space} className="create-space">
                 {/* Decorative stars */}
                 <span
                   style={{
@@ -674,6 +680,7 @@ export default function CreatePage() {
 
                 {/* Planet */}
                 <div
+                  className="create-planet"
                   style={{
                     ...styles.planet,
                     background: `radial-gradient(
@@ -729,12 +736,12 @@ export default function CreatePage() {
                     >
                       <span>{star.icon}</span>
 
-                      <small>{star.title}</small>
+                      <small className="create-user-star-label">{star.title}</small>
                     </div>
                   );
                 })}
 
-                <div style={styles.previewName}>
+                <div style={styles.previewName} className="create-preview-name">
                   <h2>
                     {name || "Your planet"}
                   </h2>
@@ -752,7 +759,7 @@ export default function CreatePage() {
                 </div>
               </div>
 
-              <p style={styles.previewHint}>
+              <p style={styles.previewHint} className="create-preview-hint">
                 {stars.length === 0
                   ? "Add stars to see them appear around your planet."
                   : `${stars.length} star${
@@ -783,7 +790,7 @@ export default function CreatePage() {
   }
 
   return (
-    <main style={styles.landing}>
+    <main style={styles.landing} className="create-landing">
       <div style={styles.landingContent}>
         <div style={styles.heroPlanet} />
 
@@ -805,6 +812,7 @@ export default function CreatePage() {
           type="button"
           onClick={() => setStarted(true)}
           style={styles.startButton}
+          className="create-start-btn"
         >
           Start creating
         </button>
@@ -828,8 +836,7 @@ export default function CreatePage() {
 
 const styles = {
   main: {
-    minHeight: "100vh",
-    padding: "40px 20px 60px",
+    minHeight: "100dvh",
     background:
       "radial-gradient(circle at center, #17234a 0%, #090b1a 55%, #03040a 100%)",
     color: "white",
@@ -855,10 +862,6 @@ const styles = {
   },
 
   editorGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "minmax(0, 1fr) minmax(0, 1fr)",
-    gap: "30px",
     alignItems: "start",
   },
 
@@ -1151,16 +1154,15 @@ const styles = {
   },
 
   preview: {
-    minHeight: "650px",
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: "22px",
     background: "rgba(255,255,255,0.04)",
-    border:
-      "1px solid rgba(255,255,255,0.1)",
+    border: "1px solid rgba(255,255,255,0.1)",
     overflow: "hidden",
+    boxSizing: "border-box" as const,
   },
 
   previewLabel: {
@@ -1174,14 +1176,11 @@ const styles = {
   space: {
     position: "relative" as const,
     width: "100%",
-    height: "570px",
     overflow: "hidden",
   },
 
   planet: {
     position: "absolute" as const,
-    width: "220px",
-    height: "220px",
     left: "50%",
     top: "43%",
     transform: "translate(-50%, -50%)",
@@ -1254,11 +1253,10 @@ const styles = {
   },
 
   landing: {
-    minHeight: "100vh",
+    minHeight: "100dvh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "24px",
     background:
       "radial-gradient(circle at center, #18234a 0%, #090b1a 55%, #03040a 100%)",
     color: "white",

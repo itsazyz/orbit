@@ -75,7 +75,7 @@ export function MusicPicker({
   }
 
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: 20 }} className="create-music-picker">
       <label
         style={{
           display: 'flex',

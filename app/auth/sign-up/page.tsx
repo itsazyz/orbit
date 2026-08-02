@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { useLanguage } from '@/lib/i18n/context';
+import { getAuthErrorKey } from '@/lib/auth/errors';
 
 export default function SignUpPage() {
   const { t } = useLanguage();
@@ -44,7 +45,7 @@ export default function SignUpPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(t(getAuthErrorKey(authError.message)));
       setLoading(false);
       return;
     }

@@ -55,6 +55,14 @@ export interface Dictionary {
     verifying: string;
     errorTitle: string;
     errorDefault: string;
+    errors: {
+      emailRateLimit: string;
+      emailTaken: string;
+      invalidEmail: string;
+      weakPassword: string;
+      signupDisabled: string;
+      generic: string;
+    };
   };
   create: {
     stepOf: string;

@@ -50,7 +50,15 @@
     "backToHome": "Back to home",
     "verifying": "Verifying your account…",
     "errorTitle": "Verification failed",
-    "errorDefault": "We couldn't verify your email. The link may have expired — try signing up again or request a new link."
+    "errorDefault": "We couldn't verify your email. The link may have expired — try signing up again or request a new link.",
+    "errors": {
+      "emailRateLimit": "Too many confirmation emails were sent. Wait about an hour, then try again — or sign in if you already registered.",
+      "emailTaken": "This email is already registered. Try signing in instead.",
+      "invalidEmail": "Please enter a valid email address.",
+      "weakPassword": "Password must be at least 8 characters.",
+      "signupDisabled": "New sign-ups are temporarily disabled.",
+      "generic": "Something went wrong. Please try again."
+    }
   },
   "create": {
     "stepOf": "Step {step} of {total}",
