@@ -34,7 +34,7 @@ export default function SignInPage() {
       return;
     }
 
-    router.push(redirectTo);
+    router.push(redirectTo as any);
     router.refresh();
   }
 
