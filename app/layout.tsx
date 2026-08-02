@@ -1,3 +1,4 @@
+import { getDictionary } from '@/lib/i18n';
 import type { Metadata } from 'next';
 import { Inter, Noto_Sans_Arabic } from 'next/font/google';
 import { cookies } from 'next/headers';
