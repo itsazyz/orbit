@@ -111,7 +111,7 @@ export function LandingPage() {
           reverse
           visual={
             <div className="flex flex-wrap justify-center gap-3">
-              {dict.landing.examples.map((example, i) => (
+              {dict.landing.examples.map((example: any, i: number) => (
                 <span
                   key={i}
                   className="rounded-full border border-space-border bg-space-panel px-4 py-2 text-sm text-star-dim"
