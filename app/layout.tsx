@@ -37,11 +37,14 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const lang = parseLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const dict = await getDictionary(lang);
 
   return (
     <html lang={lang} dir={dir} className="dark">
       <body className={`${inter.variable} ${notoArabic.variable}`}>
-        <LanguageProvider initialLang={lang}>{children}</LanguageProvider>
+        <LanguageProvider initialLang={lang} initialDict={dict}>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );
