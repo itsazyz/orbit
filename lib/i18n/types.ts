@@ -43,6 +43,18 @@ export interface Dictionary {
     hasAccount: string;
     checkEmail: string;
     backToSignIn: string;
+    checkEmailTitle: string;
+    checkEmailSubtitle: string;
+    checkEmailStep1: string;
+    checkEmailStep2: string;
+    checkEmailStep3: string;
+    verifiedTitle: string;
+    verifiedSubtitle: string;
+    continueToCreate: string;
+    backToHome: string;
+    verifying: string;
+    errorTitle: string;
+    errorDefault: string;
   };
   create: {
     stepOf: string;

@@ -19,7 +19,6 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checkEmail, setCheckEmail] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,11 +31,15 @@ export default function SignUpPage() {
 
     setLoading(true);
     const supabase = createClient();
+    const redirectBase =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
+      window.location.origin;
+
     const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/create`,
+        emailRedirectTo: `${redirectBase}/auth/callback?next=${encodeURIComponent('/auth/verified')}`,
       },
     });
 
@@ -46,27 +49,20 @@ export default function SignUpPage() {
       return;
     }
 
-    setCheckEmail(true);
     setLoading(false);
 
-    // If email confirmation is disabled, redirect immediately
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (session) {
       const path = await getPostAuthPath(supabase);
       router.push(path);
       router.refresh();
+      return;
     }
-  }
 
-  if (checkEmail) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <p className="max-w-md text-star-dim">{t('auth.checkEmail')}</p>
-        <Link href="/auth/sign-in" className="mt-6 text-accent hover:underline">
-          {t('auth.backToSignIn')}
-        </Link>
-      </div>
-    );
+    router.push(`/auth/check-email?email=${encodeURIComponent(email)}`);
   }
 
   return (

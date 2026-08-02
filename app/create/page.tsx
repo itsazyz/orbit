@@ -58,40 +58,45 @@ export default function CreatePage() {
 
   useEffect(() => {
     async function init() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
-        router.replace("/auth/sign-in?redirectTo=/create");
-        return;
+        if (!user) {
+          router.replace("/auth/sign-in?redirectTo=/create");
+          return;
+        }
+
+        const existing = await loadPlanetForEditor(supabase);
+
+        if (existing) {
+          setName(existing.profile.display_name);
+          setUsername(existing.profile.username);
+          setBio(existing.profile.bio);
+          setPlanetColor(existing.profile.planet_color);
+          setPlanetSurface(existing.profile.planet_surface_style as PlanetSurfaceStyle);
+          setMusicEnabled(existing.profile.music_enabled);
+          setMusicUrl(existing.profile.music_url);
+          setStars(
+            existing.stars.map((star) => ({
+              id: star.id,
+              title: star.title,
+              content: star.content,
+              icon: star.icon,
+              visualType: star.visualType as StarVisualType,
+            }))
+          );
+          setIsEditing(true);
+          setStarted(true);
+        }
+      } catch (err) {
+        console.error("[create] init failed:", err);
+        setMessage("Could not load your planet. You can still create one below.");
+      } finally {
+        setLoading(false);
       }
-
-      const existing = await loadPlanetForEditor(supabase);
-
-      if (existing) {
-        setName(existing.profile.display_name);
-        setUsername(existing.profile.username);
-        setBio(existing.profile.bio);
-        setPlanetColor(existing.profile.planet_color);
-        setPlanetSurface(existing.profile.planet_surface_style as PlanetSurfaceStyle);
-        setMusicEnabled(existing.profile.music_enabled);
-        setMusicUrl(existing.profile.music_url);
-        setStars(
-          existing.stars.map((star) => ({
-            id: star.id,
-            title: star.title,
-            content: star.content,
-            icon: star.icon,
-            visualType: star.visualType as StarVisualType,
-          }))
-        );
-        setIsEditing(true);
-        setStarted(true);
-      }
-
-      setLoading(false);
     }
 
     init();

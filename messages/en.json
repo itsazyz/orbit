@@ -38,7 +38,19 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "checkEmail": "Check your email for a confirmation link.",
-    "backToSignIn": "Back to sign in"
+    "backToSignIn": "Back to sign in",
+    "checkEmailTitle": "Confirm your email",
+    "checkEmailSubtitle": "We sent you a confirmation link. Open it to activate your account and start building your planet.",
+    "checkEmailStep1": "Open your inbox (check spam too)",
+    "checkEmailStep2": "Click the confirmation link in the email",
+    "checkEmailStep3": "You'll land on a welcome page — then create your planet",
+    "verifiedTitle": "Email confirmed!",
+    "verifiedSubtitle": "Your account is ready. Now build your personal universe and share it with one link.",
+    "continueToCreate": "Create my planet",
+    "backToHome": "Back to home",
+    "verifying": "Verifying your account…",
+    "errorTitle": "Verification failed",
+    "errorDefault": "We couldn't verify your email. The link may have expired — try signing up again or request a new link."
   },
   "create": {
     "stepOf": "Step {step} of {total}",
