@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/lib/i18n/context';
 
 interface MusicPickerProps {
   enabled: boolean;
@@ -18,6 +19,7 @@ export function MusicPicker({
   onMusicUrlChange,
   volume = 0.3,
 }: MusicPickerProps) {
+  const { t } = useLanguage();
   const fileRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -28,12 +30,12 @@ export function MusicPicker({
     if (!file) return;
 
     if (!file.type.startsWith('audio/')) {
-      setError('Please choose an audio file (MP3, WAV, OGG…).');
+      setError(t('create.music.invalidType'));
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      setError('File must be 8 MB or smaller.');
+      setError(t('create.music.fileTooLarge'));
       return;
     }
 
@@ -48,7 +50,7 @@ export function MusicPicker({
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError('Sign in to upload music.');
+        setError(t('create.music.signInUpload'));
         return;
       }
 
@@ -68,7 +70,7 @@ export function MusicPicker({
       onMusicUrlChange(data.publicUrl);
       onEnabledChange(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed.');
+      setError(e instanceof Error ? e.message : t('create.music.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -92,7 +94,7 @@ export function MusicPicker({
           checked={enabled}
           onChange={(e) => onEnabledChange(e.target.checked)}
         />
-        <span>Play background music for visitors (30% volume)</span>
+        <span>{t('create.music.enable')}</span>
       </label>
 
       <input
@@ -118,7 +120,7 @@ export function MusicPicker({
             fontSize: 14,
           }}
         >
-          {uploading ? 'Uploading…' : 'Choose a song from your device'}
+          {uploading ? t('create.music.uploading') : t('create.music.chooseFile')}
         </button>
 
         {fileName ? (
@@ -128,7 +130,9 @@ export function MusicPicker({
 
       {musicUrl ? (
         <div style={{ marginTop: 12 }}>
-          <p style={{ color: '#9da6c2', fontSize: 12, margin: '0 0 8px' }}>Preview:</p>
+          <p style={{ color: '#9da6c2', fontSize: 12, margin: '0 0 8px' }}>
+            {t('create.music.preview')}
+          </p>
           <audio
             ref={audioRef}
             controls
@@ -142,7 +146,7 @@ export function MusicPicker({
       ) : null}
 
       <p style={{ color: '#68718c', fontSize: 12, marginTop: 10, lineHeight: 1.5 }}>
-        Or paste a direct link to an MP3:
+        {t('create.music.linkHint')}
       </p>
       <input
         value={musicUrl}
@@ -150,7 +154,7 @@ export function MusicPicker({
           onMusicUrlChange(e.target.value);
           if (e.target.value.trim()) onEnabledChange(true);
         }}
-        placeholder="https://example.com/your-song.mp3"
+        placeholder={t('create.music.linkPlaceholder')}
         style={{
           width: '100%',
           padding: 14,

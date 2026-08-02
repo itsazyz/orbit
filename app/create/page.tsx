@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { computeAllStarLayouts } from "@/lib/universe/star-layout";
 import {
   STAR_VISUAL_OPTIONS,
   PLANET_SURFACE_OPTIONS,
@@ -12,7 +11,10 @@ import {
 } from "@/lib/universe/visual-styles";
 import type { PlanetSurfaceStyle } from "@/types/database";
 import { loadPlanetForEditor } from "@/lib/profile/client";
+import { publishUserPlanet } from "@/lib/profile/publish-planet";
 import { MusicPicker } from "@/components/create/MusicPicker";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { useLanguage } from "@/lib/i18n/context";
 import "./create.css";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -34,6 +36,9 @@ type Star = {
 
 export default function CreatePage() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
+  const presetLabel = (option: { labelEn: string; labelAr: string }) =>
+    lang === "ar" ? option.labelAr : option.labelEn;
   const [loading, setLoading] = useState(true);
   const [started, setStarted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -94,7 +99,7 @@ export default function CreatePage() {
         }
       } catch (err) {
         console.error("[create] init failed:", err);
-        setMessage("Could not load your planet. You can still create one below.");
+        setMessage(t("create.loadFailed"));
       } finally {
         setLoading(false);
       }
@@ -105,27 +110,27 @@ export default function CreatePage() {
 
   function addStar() {
     if (!starTitle.trim()) {
-      setMessage("Please give your star a title.");
+      setMessage(t("create.errors.noStarTitle"));
       return;
     }
 
     if (starTitle.trim().length > 60) {
-      setMessage("Star title must be 60 characters or less.");
+      setMessage(t("create.errors.starTitleLong"));
       return;
     }
 
     if (!starContent.trim()) {
-      setMessage("Please write something for this star.");
+      setMessage(t("create.errors.noStarContent"));
       return;
     }
 
     if (starContent.trim().length > 280) {
-      setMessage("Star content must be 280 characters or less.");
+      setMessage(t("create.errors.starContentLong"));
       return;
     }
 
     if (stars.length >= 20) {
-      setMessage("You can add at most 20 stars.");
+      setMessage(t("create.errors.maxStars"));
       return;
     }
 
@@ -159,44 +164,42 @@ export default function CreatePage() {
     const trimmedBio = bio.trim();
 
     if (!trimmedName) {
-      setMessage("Please enter your name.");
+      setMessage(t("create.errors.noName"));
       return;
     }
 
     if (trimmedName.length > 60) {
-      setMessage("Name must be 60 characters or less.");
+      setMessage(t("create.errors.nameLong"));
       return;
     }
 
     if (!cleanUsername) {
-      setMessage("Please choose a username.");
+      setMessage(t("create.errors.noUsername"));
       return;
     }
 
     if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-      setMessage("Username must be between 3 and 30 characters.");
+      setMessage(t("create.errors.usernameLength"));
       return;
     }
 
     if (!USERNAME_RE.test(cleanUsername)) {
-      setMessage(
-        "Username can only contain lowercase letters, numbers, and hyphens. It must start and end with a letter or number."
-      );
+      setMessage(t("create.errors.usernameFormat"));
       return;
     }
 
     if (RESERVED_USERNAMES.has(cleanUsername)) {
-      setMessage("This username is reserved. Please choose another.");
+      setMessage(t("create.errors.usernameReserved"));
       return;
     }
 
     if (trimmedBio.length > 240) {
-      setMessage("Bio must be 240 characters or less.");
+      setMessage(t("create.errors.bioLong"));
       return;
     }
 
     if (stars.length === 0) {
-      setMessage("Add at least one star before publishing your planet.");
+      setMessage(t("create.errors.noStars"));
       return;
     }
 
@@ -210,7 +213,7 @@ export default function CreatePage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setMessage("You need to sign in before creating a planet.");
+        setMessage(t("create.errors.notSignedIn"));
         setPublishing(false);
         return;
       }
@@ -223,92 +226,45 @@ export default function CreatePage() {
         .maybeSingle();
 
       if (existingProfile) {
-        setMessage("This username is already taken.");
+        setMessage(t("create.errors.usernameTaken"));
         setPublishing(false);
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .update({
+      const result = await publishUserPlanet(
+        supabase,
+        user.id,
+        {
+          displayName: trimmedName,
           username: cleanUsername,
-          display_name: trimmedName,
-          bio: trimmedBio || null,
-          planet_color: planetColor,
-          planet_surface_style: planetSurface,
-          music_enabled: musicEnabled,
-          music_url: musicEnabled && musicUrl.trim() ? musicUrl.trim() : null,
-          music_volume: 0.3,
-          is_published: true,
-          visibility: "public",
-        })
-        .eq("id", user.id)
-        .select("id, username")
-        .single();
+          bio: trimmedBio,
+          planetColor,
+          planetSurface,
+          musicEnabled,
+          musicUrl,
+        },
+        stars
+      );
 
-      if (profileError) {
-        console.error("Profile error:", profileError);
+      if (!result.ok) {
+        console.error("Profile error:", result.error);
         setMessage(
-          profileError.message ||
-            "Could not save your planet. Please check your username and try again."
+          result.error.includes("coerce")
+            ? t("create.errors.saveFailed")
+            : result.error || t("create.errors.saveFailed")
         );
         setPublishing(false);
         return;
       }
 
-      const { error: deleteError } = await supabase
-        .from("stars")
-        .delete()
-        .eq("profile_id", user.id);
-
-      if (deleteError) {
-        console.error("Delete stars error:", deleteError);
-        setMessage(
-          deleteError.message || "Could not update your stars."
-        );
-        setPublishing(false);
-        return;
-      }
-
-      const layouts = computeAllStarLayouts(stars.length);
-
-      const starsToInsert = stars.map((star, index) => {
-        const layout = layouts[index]!;
-        return {
-          profile_id: user.id,
-          title: star.title,
-          content: star.content,
-          icon: star.icon,
-          visual_type: star.visualType,
-          orbit_speed: 0.8 + (index % 3) * 0.4,
-          angle: layout.angle,
-          distance: layout.distance,
-          size: layout.size,
-          sort_order: index,
-        };
-      });
-
-      const { error: starsError } = await supabase
-        .from("stars")
-        .insert(starsToInsert);
-
-      if (starsError) {
-        console.error("Stars error:", starsError);
-        setMessage(
-          starsError.message || "Could not save your stars."
-        );
-        setPublishing(false);
-        return;
-      }
-
-      window.location.href = `/${profile.username}`;
+      window.location.href = `/${result.username}`;
     } catch (error) {
       console.error("Publish error:", error);
 
       setMessage(
         error instanceof Error
           ? error.message
-          : "Something went wrong while publishing."
+          : t("create.errors.generic")
       );
 
       setPublishing(false);
@@ -318,8 +274,11 @@ export default function CreatePage() {
   if (loading) {
     return (
       <main style={styles.main} className="create-page">
+        <div className="create-lang-bar">
+          <LanguageSelector variant="minimal" />
+        </div>
         <div style={{ ...styles.container, textAlign: "center", paddingTop: 80 }} className="create-container">
-          <p style={{ color: "#aeb6cf" }}>Loading your universe…</p>
+          <p style={{ color: "#aeb6cf" }}>{t("create.loading")}</p>
         </div>
       </main>
     );
@@ -328,32 +287,33 @@ export default function CreatePage() {
   if (started) {
     return (
       <main style={styles.main} className="create-page">
+        <div className="create-lang-bar">
+          <LanguageSelector variant="minimal" />
+        </div>
         <div style={styles.container} className="create-container">
           <h1 style={styles.pageTitle}>
-            {isEditing ? "Customize your planet" : "Build your planet"}
+            {isEditing ? t("create.customizeTitle") : t("create.buildTitle")}
           </h1>
 
           <p style={styles.pageSubtitle} className="create-page-subtitle">
-            {isEditing
-              ? "Update your world — changes appear on your public page."
-              : "Add the details that represent your world."}
+            {isEditing ? t("create.customizeSubtitle") : t("create.buildSubtitle")}
           </p>
 
           <div style={styles.editorGrid} className="create-editor-grid">
             {/* LEFT SIDE */}
             <section style={styles.panel} className="create-panel">
-              <label style={styles.label}>Name</label>
+              <label style={styles.label}>{t("create.nameLabel")}</label>
 
               <input
                 className="create-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder={t("create.namePlaceholder")}
                 maxLength={60}
                 style={styles.input}
               />
 
-              <label style={styles.label}>Username</label>
+              <label style={styles.label}>{t("create.usernameLabel")}</label>
 
               <div style={styles.usernameWrapper}>
                 <span style={styles.usernamePrefix}>orbit/</span>
@@ -373,13 +333,13 @@ export default function CreatePage() {
                 />
               </div>
 
-              <label style={styles.label}>About you</label>
+              <label style={styles.label}>{t("create.aboutLabel")}</label>
 
               <textarea
                 className="create-input"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell people about your world..."
+                placeholder={t("create.aboutPlaceholder")}
                 rows={5}
                 maxLength={240}
                 style={{
@@ -389,7 +349,7 @@ export default function CreatePage() {
                 }}
               />
 
-              <label style={styles.label}>Planet color</label>
+              <label style={styles.label}>{t("create.planetColorLabel")}</label>
 
               <div style={styles.colorRow}>
                 <input
@@ -402,7 +362,7 @@ export default function CreatePage() {
                 <span style={styles.colorValue}>{planetColor}</span>
               </div>
 
-              <label style={styles.label}>Planet surface</label>
+              <label style={styles.label}>{t("create.planetSurfaceLabel")}</label>
               <div style={styles.chipRow} className="create-chip-row">
                 {PLANET_SURFACE_OPTIONS.map((option) => (
                   <button
@@ -416,12 +376,12 @@ export default function CreatePage() {
                       ...(planetSurface === option.id ? styles.chipActive : {}),
                     }}
                   >
-                    {option.labelEn}
+                    {presetLabel(option)}
                   </button>
                 ))}
               </div>
 
-              <label style={styles.label}>Background music</label>
+              <label style={styles.label}>{t("create.musicLabel")}</label>
               <MusicPicker
                 enabled={musicEnabled}
                 onEnabledChange={setMusicEnabled}
@@ -432,10 +392,10 @@ export default function CreatePage() {
               {/* STARS */}
               <div style={styles.starsHeader} className="create-stars-header">
                 <div>
-                  <h2 style={styles.sectionTitle}>Your stars</h2>
+                  <h2 style={styles.sectionTitle}>{t("create.starsTitle")}</h2>
 
                   <p style={styles.sectionSubtitle}>
-                    Each star represents something about you.
+                    {t("create.starsSubtitle")}
                   </p>
                 </div>
 
@@ -453,16 +413,16 @@ export default function CreatePage() {
                   }}
                   className="create-add-star-btn"
                 >
-                  + Add star
+                  {t("create.addStar")}
                 </button>
               </div>
 
               {/* STAR FORM */}
               {showStarForm && (
                 <div style={styles.starForm} className="create-star-form">
-                  <h3 style={styles.formTitle}>Create a star</h3>
+                  <h3 style={styles.formTitle}>{t("create.createStarTitle")}</h3>
 
-                  <label style={styles.label}>Icon</label>
+                  <label style={styles.label}>{t("create.iconLabel")}</label>
 
                   <div style={styles.iconOptions}>
                     {[
@@ -491,7 +451,7 @@ export default function CreatePage() {
                     ))}
                   </div>
 
-                  <label style={styles.label}>Star shape</label>
+                  <label style={styles.label}>{t("create.starShapeLabel")}</label>
                   <div style={styles.chipRow} className="create-chip-row">
                     {STAR_VISUAL_OPTIONS.map((option) => (
                       <button
@@ -507,27 +467,27 @@ export default function CreatePage() {
                             : {}),
                         }}
                       >
-                        {option.labelEn}
+                        {presetLabel(option)}
                       </button>
                     ))}
                   </div>
 
-                  <label style={styles.label}>Star title</label>
+                  <label style={styles.label}>{t("create.starTitleLabel")}</label>
 
                   <input
                     value={starTitle}
                     onChange={(e) => setStarTitle(e.target.value)}
-                    placeholder="Music, Dreams, Travel..."
+                    placeholder={t("create.starTitlePlaceholder")}
                     maxLength={60}
                     style={styles.input}
                   />
 
-                  <label style={styles.label}>Content</label>
+                  <label style={styles.label}>{t("create.starContentLabel")}</label>
 
                   <textarea
                     value={starContent}
                     onChange={(e) => setStarContent(e.target.value)}
-                    placeholder="Tell people what this means to you..."
+                    placeholder={t("create.starContentPlaceholder")}
                     rows={5}
                     maxLength={280}
                     style={{
@@ -547,7 +507,7 @@ export default function CreatePage() {
                       }}
                       style={styles.cancelButton}
                     >
-                      Cancel
+                      {t("create.cancel")}
                     </button>
 
                     <button
@@ -555,7 +515,7 @@ export default function CreatePage() {
                       onClick={addStar}
                       style={styles.saveStarButton}
                     >
-                      Add star
+                      {t("create.addStarButton")}
                     </button>
                   </div>
                 </div>
@@ -568,12 +528,11 @@ export default function CreatePage() {
                     <div style={styles.emptyStarIcon}>✦</div>
 
                     <p style={styles.emptyTitle}>
-                      Your orbit is empty
+                      {t("create.emptyStarsTitle")}
                     </p>
 
                     <p style={styles.emptyText}>
-                      Add stars to show people the things that make
-                      you, you.
+                      {t("create.emptyStarsText")}
                     </p>
                   </div>
                 ) : (
@@ -597,7 +556,7 @@ export default function CreatePage() {
                         type="button"
                         onClick={() => removeStar(star.id)}
                         style={styles.deleteButton}
-                        aria-label="Delete star"
+                        aria-label={t("create.deleteStar")}
                       >
                         ×
                       </button>
@@ -624,17 +583,17 @@ export default function CreatePage() {
               >
                 {publishing
                   ? isEditing
-                    ? "Saving..."
-                    : "Publishing..."
+                    ? t("create.saving")
+                    : t("create.publishing")
                   : isEditing
-                    ? "Save changes"
-                    : "Publish my planet"}
+                    ? t("create.saveButton")
+                    : t("create.publishButton")}
               </button>
             </section>
 
             {/* PREVIEW */}
             <section style={styles.preview} className="create-preview">
-              <div style={styles.previewLabel}>LIVE PREVIEW</div>
+              <div style={styles.previewLabel}>{t("create.livePreview")}</div>
 
               <div style={styles.space} className="create-space">
                 {/* Decorative stars */}
@@ -743,12 +702,11 @@ export default function CreatePage() {
 
                 <div style={styles.previewName} className="create-preview-name">
                   <h2>
-                    {name || "Your planet"}
+                    {name || t("create.previewPlanet")}
                   </h2>
 
                   <p>
-                    {bio ||
-                      "Your universe will appear here."}
+                    {bio || t("create.previewBio")}
                   </p>
 
                   {username && (
@@ -761,10 +719,13 @@ export default function CreatePage() {
 
               <p style={styles.previewHint} className="create-preview-hint">
                 {stars.length === 0
-                  ? "Add stars to see them appear around your planet."
-                  : `${stars.length} star${
-                      stars.length === 1 ? "" : "s"
-                    } in your orbit`}
+                  ? t("create.previewEmptyStars")
+                  : t(
+                      stars.length === 1
+                        ? "create.previewStarsCount"
+                        : "create.previewStarsCountPlural",
+                      { count: stars.length }
+                    )}
               </p>
             </section>
           </div>
@@ -772,7 +733,7 @@ export default function CreatePage() {
           <div style={styles.backContainer}>
             {isEditing ? (
               <Link href="/dashboard" style={styles.homeLink}>
-                ← Back to dashboard
+                {t("create.backDashboard")}
               </Link>
             ) : (
               <button
@@ -780,7 +741,7 @@ export default function CreatePage() {
                 onClick={() => setStarted(false)}
                 style={styles.backButton}
               >
-                ← Back
+                {t("create.back")}
               </button>
             )}
           </div>
@@ -791,21 +752,22 @@ export default function CreatePage() {
 
   return (
     <main style={styles.landing} className="create-landing">
+      <div className="create-lang-bar">
+        <LanguageSelector variant="minimal" />
+      </div>
       <div style={styles.landingContent}>
         <div style={styles.heroPlanet} />
 
         <p style={styles.eyebrow}>
-          CREATE YOUR ORBIT
+          {t("create.landingEyebrow")}
         </p>
 
         <h1 style={styles.heroTitle}>
-          Create your planet
+          {t("create.landingTitle")}
         </h1>
 
         <p style={styles.heroText}>
-          Build a small universe that expresses who you
-          are, what you love, and the ideas that orbit
-          around you.
+          {t("create.landingText")}
         </p>
 
         <button
@@ -814,7 +776,7 @@ export default function CreatePage() {
           style={styles.startButton}
           className="create-start-btn"
         >
-          Start creating
+          {t("create.startCreating")}
         </button>
 
         <div style={{ marginTop: "28px" }}>
@@ -822,7 +784,7 @@ export default function CreatePage() {
             href="/"
             style={styles.homeLink}
           >
-            ← Back to home
+            {t("create.backHome")}
           </Link>
         </div>
       </div>
@@ -841,6 +803,7 @@ const styles = {
       "radial-gradient(circle at center, #17234a 0%, #090b1a 55%, #03040a 100%)",
     color: "white",
     boxSizing: "border-box" as const,
+    position: "relative" as const,
   },
 
   container: {
@@ -1262,6 +1225,7 @@ const styles = {
     color: "white",
     textAlign: "center" as const,
     boxSizing: "border-box" as const,
+    position: "relative" as const,
   },
 
   landingContent: {
