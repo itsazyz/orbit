@@ -11,14 +11,9 @@ import {
 } from 'react';
 import type { Language } from '@/types/database';
 import {
-  getDictionary,
-  interpolate,
-  isRTL,
   LANGUAGE_COOKIE,
   parseLanguage,
-  type Dictionary,
 } from '@/lib/i18n';
-
 interface LanguageContextValue {
   lang: Language;
   dir: 'ltr' | 'rtl';
