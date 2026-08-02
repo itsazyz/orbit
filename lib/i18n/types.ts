@@ -1,0 +1,146 @@
+import type { Language } from '@/types/database';
+
+export type { Language };
+
+export interface Dictionary {
+  tagline: string;
+  nav: {
+    createPlanet: string;
+    signIn: string;
+    signOut: string;
+    dashboard: string;
+    settings: string;
+  };
+  landing: {
+    heroTitle: string;
+    heroSubtitle: string;
+    createPlanet: string;
+    seeHowItWorks: string;
+    section1Title: string;
+    section1Desc: string;
+    section2Title: string;
+    section2Desc: string;
+    section3Title: string;
+    section3Desc: string;
+    section4Title: string;
+    section4Desc: string;
+    examples: string[];
+    footerTagline: string;
+    footerCta: string;
+  };
+  auth: {
+    signInTitle: string;
+    signUpTitle: string;
+    resetTitle: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    signIn: string;
+    signUp: string;
+    resetPassword: string;
+    forgotPassword: string;
+    noAccount: string;
+    hasAccount: string;
+    checkEmail: string;
+    backToSignIn: string;
+  };
+  create: {
+    stepOf: string;
+    step1Title: string;
+    step1DisplayName: string;
+    step1Username: string;
+    step1Bio: string;
+    step1BioPlaceholder: string;
+    step1UrlPreview: string;
+    step2Title: string;
+    step2AddObject: string;
+    step2MinObjects: string;
+    step3Title: string;
+    step3PlanetColor: string;
+    step3Surface: string;
+    step3Atmosphere: string;
+    step3Glow: string;
+    step3Ring: string;
+    step3Background: string;
+    step3Mood: string;
+    step4Title: string;
+    step4Publish: string;
+    next: string;
+    back: string;
+    save: string;
+    objectName: string;
+    objectCategory: string;
+    objectDescription: string;
+    objectImportance: string;
+    objectVisualType: string;
+    deleteObject: string;
+    editObject: string;
+  };
+  publish: {
+    ready: string;
+    copyLink: string;
+    share: string;
+    openWorld: string;
+    editWorld: string;
+    copied: string;
+  };
+  public: {
+    worldOf: string;
+    privateWorld: string;
+    notFound: string;
+    createYourOwn: string;
+    createPlanet: string;
+    tagline: string;
+    objectDetails: string;
+    close: string;
+    resetView: string;
+    srObjectList: string;
+  };
+  dashboard: {
+    title: string;
+    editWorld: string;
+    copyLink: string;
+    openPublic: string;
+    status: string;
+    published: string;
+    draft: string;
+    visibility: string;
+  };
+  settings: {
+    title: string;
+    profile: string;
+    displayName: string;
+    username: string;
+    bio: string;
+    language: string;
+    visibility: string;
+    public: string;
+    private: string;
+    planetAppearance: string;
+    changePassword: string;
+    newPassword: string;
+    deleteAccount: string;
+    deleteConfirm: string;
+    save: string;
+    saved: string;
+  };
+  categories: Record<string, string>;
+  moods: Record<string, string>;
+  surfaces: Record<string, string>;
+  atmospheres: Record<string, string>;
+  backgrounds: Record<string, string>;
+  visualTypes: Record<string, string>;
+  errors: {
+    generic: string;
+    usernameTaken: string;
+    usernameInvalid: string;
+    network: string;
+    minObjects: string;
+    maxObjects: string;
+  };
+  common: {
+    loading: string;
+    cancel: string;
+    continue: string;
+  };
+}

@@ -1,0 +1,179 @@
+{
+  "tagline": "كل إنسان عالم.",
+  "nav": {
+    "createPlanet": "اصنع كوكبي",
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج",
+    "dashboard": "لوحة التحكم",
+    "settings": "الإعدادات"
+  },
+  "landing": {
+    "heroTitle": "كل إنسان عالم.",
+    "heroSubtitle": "لا يمكن لسطر في البايو أن يختصر كل ما تحبه، وما تفكر فيه، وما تسعى إليه. اصنع كوكبًا يمثلك، وأضف حوله الأشياء التي تشكّل عالمك، ثم شاركه برابط واحد.",
+    "createPlanet": "اصنع كوكبي",
+    "seeHowItWorks": "كيف يعمل؟",
+    "section1Title": "كوكبك هو أنت.",
+    "section1Desc": "الكوكب في مركز عالمك يمثلك. اختر ألوانه وطابعه وشكله بالطريقة التي تعبّر عنك.",
+    "section2Title": "ما الذي يدور في عالمك؟",
+    "section2Desc": "أضف اهتماماتك وأفكارك وقيمك ومهاراتك وأهدافك والأشياء التي تشكّل ذاتك.",
+    "section3Title": "شارك عالمك.",
+    "section3Desc": "احصل على رابطك الشخصي، وضعه في أي مكان تريد أن يعرف الناس من خلاله المزيد عنك.",
+    "section4Title": "أكثر من مجرد بايو.",
+    "section4Desc": "عالمك خريطة بصرية لما يهمك ويشكّل شخصيتك.",
+    "examples": ["الفلسفة", "الموسيقى", "التصميم", "الفضول", "بناء شركة", "التعلم", "الإبداع"],
+    "footerTagline": "كل إنسان عالم.",
+    "footerCta": "اصنع عالمك الخاص."
+  },
+  "auth": {
+    "signInTitle": "مرحبًا بعودتك",
+    "signUpTitle": "أنشئ حسابك",
+    "resetTitle": "إعادة تعيين كلمة المرور",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "signIn": "تسجيل الدخول",
+    "signUp": "إنشاء حساب",
+    "resetPassword": "إرسال رابط إعادة التعيين",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "checkEmail": "تحقق من بريدك الإلكتروني للحصول على رابط التأكيد.",
+    "backToSignIn": "العودة لتسجيل الدخول"
+  },
+  "create": {
+    "stepOf": "الخطوة {step} من {total}",
+    "step1Title": "بأي اسم تريد أن يظهر عالمك؟",
+    "step1DisplayName": "الاسم المعروض",
+    "step1Username": "اسم المستخدم",
+    "step1Bio": "صف نفسك بجملة واحدة.",
+    "step1BioPlaceholder": "أفكر في الأفكار قبل أن تصبح واقعًا.",
+    "step1UrlPreview": "رابطك",
+    "step2Title": "ما الذي يشكّل عالمك؟",
+    "step2AddObject": "إضافة عنصر",
+    "step2MinObjects": "أضف 3 عناصر على الأقل تشكّل عالمك.",
+    "step3Title": "اجعله يشبهك.",
+    "step3PlanetColor": "لون الكوكب",
+    "step3Surface": "نمط السطح",
+    "step3Atmosphere": "الغلاف الجوي",
+    "step3Glow": "شدة التوهج",
+    "step3Ring": "حلقة الكوكب",
+    "step3Background": "خلفية الفضاء",
+    "step3Mood": "مزاج العالم",
+    "step4Title": "هذا عالمك.",
+    "step4Publish": "انشر عالمي",
+    "next": "متابعة",
+    "back": "رجوع",
+    "save": "حفظ",
+    "objectName": "الاسم",
+    "objectCategory": "الفئة",
+    "objectDescription": "الوصف",
+    "objectImportance": "الأهمية",
+    "objectVisualType": "النمط البصري",
+    "deleteObject": "حذف",
+    "editObject": "تعديل"
+  },
+  "publish": {
+    "ready": "عالمك أصبح جاهزًا.",
+    "copyLink": "نسخ الرابط",
+    "share": "مشاركة",
+    "openWorld": "فتح عالمي",
+    "editWorld": "تعديل عالمي",
+    "copied": "تم النسخ!"
+  },
+  "public": {
+    "worldOf": "عالم {name}",
+    "privateWorld": "هذا العالم خاص.",
+    "notFound": "لم نتمكن من العثور على هذا العالم.",
+    "createYourOwn": "اصنع عالمك الخاص.",
+    "createPlanet": "اصنع كوكبي",
+    "tagline": "كل إنسان عالم.",
+    "objectDetails": "التفاصيل",
+    "close": "إغلاق",
+    "resetView": "إعادة ضبط العرض",
+    "srObjectList": "يحتوي عالم {name} على {count} عناصر هوية:"
+  },
+  "dashboard": {
+    "title": "عالمك",
+    "editWorld": "تعديل عالمي",
+    "copyLink": "نسخ الرابط",
+    "openPublic": "فتح الصفحة العامة",
+    "status": "الحالة",
+    "published": "منشور",
+    "draft": "مسودة",
+    "visibility": "الظهور"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "displayName": "الاسم المعروض",
+    "username": "اسم المستخدم",
+    "bio": "الوصف بجملة واحدة",
+    "language": "اللغة",
+    "visibility": "الظهور",
+    "public": "عام",
+    "private": "خاص",
+    "planetAppearance": "مظهر الكوكب",
+    "changePassword": "تغيير كلمة المرور",
+    "newPassword": "كلمة مرور جديدة",
+    "deleteAccount": "حذف الحساب",
+    "deleteConfirm": "سيؤدي هذا إلى حذف حسابك وعالمك نهائيًا. لا يمكن التراجع عن هذا.",
+    "save": "حفظ التغييرات",
+    "saved": "تم الحفظ!"
+  },
+  "categories": {
+    "interest": "اهتمام",
+    "idea": "فكرة",
+    "value": "قيمة",
+    "skill": "مهارة",
+    "goal": "هدف",
+    "passion": "شغف",
+    "current_exploration": "شيء أستكشفه حاليًا"
+  },
+  "moods": {
+    "calm": "هادئ",
+    "mysterious": "غامض",
+    "creative": "إبداعي",
+    "warm": "دافئ",
+    "futuristic": "مستقبلي",
+    "minimal": "بسيط"
+  },
+  "surfaces": {
+    "smooth": "ناعم",
+    "cratered": "محفور",
+    "banded": "مخطّط",
+    "crystalline": "بلوري",
+    "oceanic": "محيطي"
+  },
+  "atmospheres": {
+    "none": "بدون",
+    "thin": "رقيق",
+    "thick": "كثيف",
+    "stormy": "عاصف"
+  },
+  "backgrounds": {
+    "deep_space": "فضاء عميق",
+    "nebula": "سديم",
+    "aurora": "شفق",
+    "void": "فراغ"
+  },
+  "visualTypes": {
+    "star": "نجمة",
+    "moon": "قمر",
+    "planet": "كوكب",
+    "comet": "مذنّب",
+    "satellite": "قمر صناعي"
+  },
+  "errors": {
+    "generic": "حدث خطأ. يرجى المحاولة مرة أخرى.",
+    "usernameTaken": "اسم المستخدم هذا مستخدم بالفعل.",
+    "usernameInvalid": "يجب أن يكون اسم المستخدم 3–30 حرفًا، أحرف صغيرة، ويمكن أن يتضمن أرقامًا وشرطات.",
+    "network": "خطأ في الشبكة. تحقق من اتصالك.",
+    "minObjects": "أضف 3 عناصر على الأقل.",
+    "maxObjects": "يمكنك إضافة 20 عنصرًا كحد أقصى."
+  },
+  "common": {
+    "loading": "جاري التحميل…",
+    "cancel": "إلغاء",
+    "continue": "متابعة"
+  }
+}

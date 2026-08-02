@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-arabic: 'Noto Sans Arabic', Tahoma, sans-serif;
+  --glow-color: #7c8cff;
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  @apply bg-space-void text-star antialiased;
+  min-height: 100dvh;
+}
+
+[dir='rtl'] body {
+  font-family: var(--font-arabic), system-ui, sans-serif;
+}
+
+[dir='ltr'] body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-accent;
+}
+
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  @apply sr-only;
+}
+
+.universe-canvas {
+  touch-action: none;
+  user-select: none;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-accent to-accent-calm bg-clip-text text-transparent;
+}
+
+.glass-panel {
+  @apply border border-space-border bg-space-panel/80 backdrop-blur-md;
+}
