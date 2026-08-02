@@ -13,7 +13,9 @@ import type { Language } from '@/types/database';
 import {
   LANGUAGE_COOKIE,
   parseLanguage,
+  getDictionary, // <--- هذا هو السطر المهم الذي كان ناقصاً
 } from '@/lib/i18n';
+
 interface LanguageContextValue {
   lang: Language;
   dir: 'ltr' | 'rtl';
@@ -35,6 +37,11 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
     }
   }
   return typeof current === 'string' ? current : path;
+}
+
+// دالة مساعدة لتحديد الاتجاه
+function isRTL(lang: Language): boolean {
+  return lang === 'ar';
 }
 
 interface LanguageProviderProps {
