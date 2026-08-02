@@ -47,6 +47,9 @@ export interface ProfileRow {
   universe_mood: UniverseMood;
   space_background: SpaceBackground;
   is_published: boolean;
+  music_url: string | null;
+  music_enabled: boolean;
+  music_volume: number;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +82,9 @@ export interface StarRow {
   angle: number;
   distance: number;
   size: number;
+  visual_type: string;
+  orbit_speed: number;
+  star_color: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -143,6 +149,11 @@ export interface Database {
         Insert: Partial<StarRow> &
           Pick<StarRow, 'profile_id' | 'title'>;
         Update: Partial<StarRow>;
+      };
+      site_config: {
+        Row: { key: string; value: Record<string, unknown>; updated_at: string };
+        Insert: { key: string; value: Record<string, unknown> };
+        Update: Partial<{ key: string; value: Record<string, unknown> }>;
       };
     };
     Views: {

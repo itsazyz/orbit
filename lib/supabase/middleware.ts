@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseEnv } from '@/lib/env';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/settings', '/create'];
+const PROTECTED_PREFIXES = ['/dashboard', '/settings', '/create', '/orbit-control'];
 
 /**
  * Called from middleware.ts on every request.

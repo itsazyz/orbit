@@ -4,6 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { computeAllStarLayouts } from "@/lib/universe/star-layout";
+import {
+  STAR_VISUAL_OPTIONS,
+  PLANET_SURFACE_OPTIONS,
+  type StarVisualType,
+} from "@/lib/universe/visual-styles";
+import type { PlanetSurfaceStyle } from "@/types/database";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 const RESERVED_USERNAMES = new Set([
@@ -19,6 +25,7 @@ type Star = {
   title: string;
   content: string;
   icon: string;
+  visualType: StarVisualType;
 };
 
 export default function CreatePage() {
@@ -28,6 +35,9 @@ export default function CreatePage() {
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [planetColor, setPlanetColor] = useState("#7C3AED");
+  const [planetSurface, setPlanetSurface] = useState<PlanetSurfaceStyle>("smooth");
+  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [musicUrl, setMusicUrl] = useState("");
 
   const [stars, setStars] = useState<Star[]>([]);
 
@@ -35,6 +45,7 @@ export default function CreatePage() {
   const [starTitle, setStarTitle] = useState("");
   const [starContent, setStarContent] = useState("");
   const [starIcon, setStarIcon] = useState("✦");
+  const [starVisualType, setStarVisualType] = useState<StarVisualType>("sparkle");
 
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -70,6 +81,7 @@ export default function CreatePage() {
       title: starTitle.trim(),
       content: starContent.trim(),
       icon: starIcon,
+      visualType: starVisualType,
     };
 
     setStars((current) => [...current, newStar]);
@@ -77,6 +89,7 @@ export default function CreatePage() {
     setStarTitle("");
     setStarContent("");
     setStarIcon("✦");
+    setStarVisualType("sparkle");
     setShowStarForm(false);
     setMessage("");
   }
@@ -169,6 +182,10 @@ export default function CreatePage() {
           display_name: trimmedName,
           bio: trimmedBio || null,
           planet_color: planetColor,
+          planet_surface_style: planetSurface,
+          music_enabled: musicEnabled,
+          music_url: musicEnabled && musicUrl.trim() ? musicUrl.trim() : null,
+          music_volume: 0.3,
           is_published: true,
           visibility: "public",
         })
@@ -209,6 +226,8 @@ export default function CreatePage() {
           title: star.title,
           content: star.content,
           icon: star.icon,
+          visual_type: star.visualType,
+          orbit_speed: 0.8 + (index % 3) * 0.4,
           angle: layout.angle,
           distance: layout.distance,
           size: layout.size,
@@ -313,6 +332,43 @@ export default function CreatePage() {
                 <span style={styles.colorValue}>{planetColor}</span>
               </div>
 
+              <label style={styles.label}>Planet surface</label>
+              <div style={styles.chipRow}>
+                {PLANET_SURFACE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setPlanetSurface(option.id as PlanetSurfaceStyle)
+                    }
+                    style={{
+                      ...styles.chip,
+                      ...(planetSurface === option.id ? styles.chipActive : {}),
+                    }}
+                  >
+                    {option.labelEn}
+                  </button>
+                ))}
+              </div>
+
+              <label style={styles.label}>Background music (optional)</label>
+              <label style={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={musicEnabled}
+                  onChange={(e) => setMusicEnabled(e.target.checked)}
+                />
+                <span>Play music for visitors at 30% volume</span>
+              </label>
+              {musicEnabled ? (
+                <input
+                  value={musicUrl}
+                  onChange={(e) => setMusicUrl(e.target.value)}
+                  placeholder="https://example.com/your-song.mp3"
+                  style={styles.input}
+                />
+              ) : null}
+
               {/* STARS */}
               <div style={styles.starsHeader}>
                 <div>
@@ -370,6 +426,27 @@ export default function CreatePage() {
                         }}
                       >
                         {icon}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label style={styles.label}>Star shape</label>
+                  <div style={styles.chipRow}>
+                    {STAR_VISUAL_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() =>
+                          setStarVisualType(option.id as StarVisualType)
+                        }
+                        style={{
+                          ...styles.chip,
+                          ...(starVisualType === option.id
+                            ? styles.chipActive
+                            : {}),
+                        }}
+                      >
+                        {option.labelEn}
                       </button>
                     ))}
                   </div>
@@ -1170,5 +1247,38 @@ const styles = {
   homeLink: {
     color: "#aeb6cf",
     textDecoration: "none",
+  },
+
+  chipRow: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "8px",
+    marginBottom: "20px",
+  },
+
+  chip: {
+    padding: "8px 12px",
+    borderRadius: "999px",
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.04)",
+    color: "#c4c9dc",
+    fontSize: "12px",
+    cursor: "pointer",
+  },
+
+  chipActive: {
+    border: "1px solid rgba(167,139,250,0.6)",
+    background: "rgba(124,58,237,0.25)",
+    color: "white",
+  },
+
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "12px",
+    color: "#b7bdd1",
+    fontSize: "14px",
+    cursor: "pointer",
   },
 };

@@ -26,6 +26,7 @@ interface PlanetRendererProps {
   size?: number;
   className?: string;
   animate?: boolean;
+  spin?: boolean;
 }
 
 export function PlanetRenderer({
@@ -39,6 +40,7 @@ export function PlanetRenderer({
   size = 120,
   className,
   animate = true,
+  spin = false,
 }: PlanetRendererProps) {
   const moodPreset = MOOD_PRESETS[mood];
   const atmosphereOpacity = getAtmosphereOpacity(atmosphere);
@@ -78,7 +80,11 @@ export function PlanetRenderer({
       ) : null}
 
       <div
-        className={cn('rounded-full', animate && 'motion-safe:animate-pulse-glow')}
+        className={cn(
+          'rounded-full relative overflow-hidden',
+          animate && 'motion-safe:animate-pulse-glow',
+          spin && 'motion-safe:animate-[spin_48s_linear_infinite]'
+        )}
         style={{
           width: size,
           height: size,
