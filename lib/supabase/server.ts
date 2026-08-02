@@ -1,6 +1,19 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
+import { getSupabaseEnv } from '@/lib/env';
+
+function requireSupabaseEnv() {
+  const env = getSupabaseEnv();
+
+  if (!env) {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel → Settings → Environment Variables.'
+    );
+  }
+
+  return env;
+}
 
 /**
  * Supabase client for use inside Server Components, Route Handlers, and
@@ -11,10 +24,11 @@ import type { Database } from '@/types/database';
  */
 export async function createClient() {
   const cookieStore = await cookies();
+  const env = requireSupabaseEnv();
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.url,
+    env.anonKey,
     {
       cookies: {
         get(name: string) {
@@ -55,7 +69,7 @@ export function createServiceRoleClient() {
   }
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    requireSupabaseEnv().url,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {

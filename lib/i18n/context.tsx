@@ -13,7 +13,8 @@ import type { Language } from '@/types/database';
 import {
   LANGUAGE_COOKIE,
   parseLanguage,
-  getDictionary, // <--- هذا هو السطر المهم الذي كان ناقصاً
+  getDictionary,
+  interpolate,
 } from '@/lib/i18n';
 
 interface LanguageContextValue {

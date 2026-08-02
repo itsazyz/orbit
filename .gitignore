@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Debug / tooling
+npm-debug.log*
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+
+# Test / IDE
+coverage/
+.vscode/
+.idea/
