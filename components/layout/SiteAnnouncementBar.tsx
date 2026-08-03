@@ -24,7 +24,7 @@ export function SiteAnnouncementBar({
   announcementEn: initialEn = '',
   announcementAr: initialAr = '',
 }: SiteAnnouncementBarProps) {
-  const { lang } = useLanguage();
+  const { lang, dir } = useLanguage();
   const [payload, setPayload] = useState<AnnouncementPayload>({
     show: initialShow,
     en: initialEn,
@@ -69,8 +69,12 @@ export function SiteAnnouncementBar({
   if (!text) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-center px-3 pt-[3.6rem] sm:pt-16">
-      <div className="pointer-events-auto w-full max-w-3xl rounded-xl border-2 border-amber-300/80 bg-amber-400 px-4 py-2.5 text-center text-sm font-semibold text-black shadow-[0_8px_30px_rgba(0,0,0,0.45)]">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-center px-4 pt-[3.5rem] sm:pt-[3.75rem]">
+      <div
+        dir={dir}
+        className="pointer-events-auto max-w-xl rounded-full border border-white/10 bg-[#0c1018]/80 px-5 py-2 text-center text-[13px] leading-relaxed tracking-wide text-slate-300 shadow-[0_6px_24px_rgba(0,0,0,0.35)] backdrop-blur-md"
+      >
+        <span className="me-2 inline-block h-1.5 w-1.5 translate-y-[-1px] rounded-full bg-sky-300/70" />
         {text}
       </div>
     </div>
