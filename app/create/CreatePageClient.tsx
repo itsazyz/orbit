@@ -745,6 +745,8 @@ export function CreatePageClient({
                   ),
                   { count: String(stars.length) }
                 )}
+                pagePreviewLabel={t("create.pagePreviewLabel")}
+                tapHint={t("create.previewTapHint")}
               />
             </section>
           </div>

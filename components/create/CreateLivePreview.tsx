@@ -7,6 +7,7 @@ import {
 } from '@/components/planet/PlanetRenderer';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
+import { StarShape } from '@/components/universe/StarShape';
 import type {
   PlanetAtmosphere,
   PlanetSurfaceStyle,
@@ -37,8 +38,11 @@ interface CreateLivePreviewProps {
   emptyBio: string;
   emptyStarsHint: string;
   starsCountLabel: string;
+  pagePreviewLabel: string;
+  tapHint: string;
 }
 
+/** Live mirror of the public planet page while editing */
 export function CreateLivePreview({
   name,
   username,
@@ -55,6 +59,8 @@ export function CreateLivePreview({
   emptyBio,
   emptyStarsHint,
   starsCountLabel,
+  pagePreviewLabel,
+  tapHint,
 }: CreateLivePreviewProps) {
   const [time, setTime] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -78,31 +84,41 @@ export function CreateLivePreview({
     return () => cancelAnimationFrame(raf);
   }, [reducedMotion]);
 
+  const displayName = name.trim() || emptyName;
+  const handle = username.trim() || 'username';
+
   const orbiting = useMemo(() => {
-    const maxShow = Math.min(stars.length, 8);
+    const maxShow = Math.min(stars.length, 10);
     return stars.slice(0, maxShow).map((star, index) => {
       const baseAngle = (index / Math.max(maxShow, 1)) * 360;
-      const distance = 95 + (index % 3) * 28;
-      const speed = 0.7 + (index % 3) * 0.35;
-      const angle = reducedMotion ? baseAngle : baseAngle + time * speed * 18;
+      const distance = 88 + (index % 3) * 32;
+      const speed = 0.65 + (index % 3) * 0.4;
+      const angle = reducedMotion ? baseAngle : baseAngle + time * speed * 14;
       const rad = (angle * Math.PI) / 180;
       return {
         ...star,
         x: Math.cos(rad) * distance,
-        y: Math.sin(rad) * distance * 0.72,
+        y: Math.sin(rad) * distance * 0.78,
+        size: 10 + (index % 3) * 2,
       };
     });
   }, [stars, time, reducedMotion]);
 
   return (
-    <div className="create-live-preview">
+    <div className="create-live-preview" aria-label={pagePreviewLabel}>
       <UniverseBackground mood={mood} spaceBackground={spaceBackground} />
-      <StarsBackground seed={`preview-${username || 'new'}`} count={48} />
-      <CosmicDust seed={`dust-${planetColor}`} count={18} color={`${planetColor}55`} />
+      <StarsBackground seed={`preview-${handle}`} count={70} />
+      <CosmicDust seed={`dust-${planetColor}`} count={22} color={`${planetColor}66`} />
+      <div className="create-live-vignette" aria-hidden />
 
       <div className="create-live-stage">
         <div className="create-orbit create-orbit-a" />
         <div className="create-orbit create-orbit-b" />
+        <div className="create-orbit create-orbit-c" />
+        <div
+          className="create-orbit-glow"
+          style={{ boxShadow: `0 0 90px ${planetColor}40` }}
+        />
 
         {orbiting.map((star) => (
           <div
@@ -114,12 +130,17 @@ export function CreateLivePreview({
             }}
             title={star.title}
           >
-            <span className="create-orbit-star-icon">{star.icon || '✦'}</span>
+            <StarShape
+              type={star.visualType || 'sparkle'}
+              size={star.size}
+              color="#ffffff"
+              icon={star.icon}
+            />
             <span className="create-orbit-star-label">{star.title}</span>
           </div>
         ))}
 
-        <div className="create-live-planet">
+        <div className={`create-live-planet ${reducedMotion ? '' : 'is-spinning'}`}>
           <PlanetRenderer
             color={planetColor}
             surfaceStyle={planetSurface}
@@ -128,7 +149,7 @@ export function CreateLivePreview({
             hasRing={hasRing}
             mood={mood}
             spaceBackground={spaceBackground}
-            size={148}
+            size={132}
             animate
             spin={!reducedMotion}
           />
@@ -136,12 +157,14 @@ export function CreateLivePreview({
       </div>
 
       <div className="create-live-identity">
-        <h2>{name.trim() || emptyName}</h2>
+        <h2>{displayName}</h2>
+        <p className="create-live-handle">@{handle}</p>
         <p className="create-live-bio">{bio.trim() || emptyBio}</p>
-        {username ? <span className="create-live-user">orbit/{username}</span> : null}
-        <p className="create-live-hint">
-          {stars.length === 0 ? emptyStarsHint : starsCountLabel}
-        </p>
+      </div>
+
+      <div className="create-live-footer">
+        {stars.length === 0 ? emptyStarsHint : tapHint.replace('{name}', displayName)}
+        <span className="create-live-count">{starsCountLabel}</span>
       </div>
     </div>
   );

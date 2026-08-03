@@ -144,9 +144,11 @@ export interface Dictionary {
     publishButton: string;
     saveButton: string;
     livePreview: string;
+    pagePreviewLabel: string;
     previewPlanet: string;
     previewBio: string;
     previewEmptyStars: string;
+    previewTapHint: string;
     previewStarsCount: string;
     previewStarsCountPlural: string;
     loadFailed: string;

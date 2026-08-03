@@ -11,6 +11,7 @@ import type { StarVisualType } from '@/lib/universe/visual-styles';
 import { PlanetRenderer, UniverseBackground } from '@/components/planet/PlanetRenderer';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
+import { StarShape } from '@/components/universe/StarShape';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export interface PublicStar {
@@ -46,124 +47,6 @@ export interface PublicProfile {
 interface PublicUniverseViewProps {
   profile: PublicProfile;
   stars: PublicStar[];
-}
-
-function StarShape({
-  type,
-  size,
-  color,
-  icon,
-}: {
-  type: string;
-  size: number;
-  color: string;
-  icon: string;
-}) {
-  const s = size;
-
-  switch (type) {
-    case 'diamond':
-      return (
-        <span
-          className="star-shape diamond"
-          style={{
-            width: s,
-            height: s,
-            background: color,
-            transform: 'rotate(45deg)',
-            borderRadius: 2,
-            boxShadow: `0 0 ${s}px ${color}`,
-          }}
-        />
-      );
-    case 'glow':
-      return (
-        <span className="star-shape glow" style={{ width: s, height: s }}>
-          <span
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              background: color,
-              boxShadow: `0 0 ${s * 2}px ${color}, 0 0 ${s * 4}px ${color}88`,
-            }}
-          />
-        </span>
-      );
-    case 'comet':
-      return (
-        <span className="star-shape comet" style={{ width: s * 2.5, height: s * 0.6 }}>
-          <span
-            style={{
-              position: 'absolute',
-              right: 0,
-              width: s,
-              height: s,
-              borderRadius: '50%',
-              background: color,
-              boxShadow: `0 0 ${s}px ${color}`,
-            }}
-          />
-          <span
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '70%',
-              height: 2,
-              background: `linear-gradient(90deg, transparent, ${color})`,
-              opacity: 0.6,
-            }}
-          />
-        </span>
-      );
-    case 'ring':
-      return (
-        <span
-          className="star-shape ring"
-          style={{
-            width: s * 1.4,
-            height: s * 1.4,
-            border: `2px solid ${color}`,
-            borderRadius: '50%',
-            boxShadow: `0 0 ${s}px ${color}66`,
-          }}
-        />
-      );
-    case 'classic':
-      return (
-        <span className="star-shape classic" style={{ fontSize: s * 1.2, color }}>
-          {icon || '★'}
-        </span>
-      );
-    case 'sparkle':
-    default:
-      return (
-        <span className="star-shape sparkle" style={{ width: s, height: s }}>
-          <span
-            className="star-core"
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              background: color,
-              boxShadow: `0 0 ${s}px white, 0 0 ${s * 2}px ${color}`,
-            }}
-          />
-          <span
-            className="star-glow"
-            style={{
-              position: 'absolute',
-              inset: '-100%',
-              borderRadius: '50%',
-              background: `${color}22`,
-              filter: 'blur(6px)',
-            }}
-          />
-        </span>
-      );
-  }
 }
 
 export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) {
@@ -646,8 +529,8 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         .star-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(1, 2, 8, 0.62);
-          backdrop-filter: blur(10px);
+          background: rgba(1, 2, 8, 0.12);
+          backdrop-filter: blur(1.5px);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -673,10 +556,10 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           padding: 42px 28px 28px;
           border-radius: 28px;
           text-align: center;
-          background: rgba(10, 12, 28, 0.42);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5), 0 0 80px rgba(124, 140, 255, 0.12);
-          backdrop-filter: blur(22px);
+          background: rgba(8, 10, 22, 0.14);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          box-shadow: 0 16px 60px rgba(0, 0, 0, 0.22);
+          backdrop-filter: blur(8px);
           animation: modalRise 0.35s ease-out;
         }
 
@@ -724,37 +607,42 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           font-size: 12px;
           letter-spacing: 1.5px;
           text-transform: uppercase;
+          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
         }
 
         .star-modal h2 {
           margin: 0;
           font-size: clamp(27px, 7vw, 38px);
+          text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
         }
 
         .modal-content {
           margin: 20px auto 0;
-          color: #e2e8f0;
+          color: #f8fafc;
           line-height: 1.8;
           font-size: 15px;
           white-space: pre-wrap;
           padding: 16px 18px;
           border-radius: 16px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
         }
 
         .modal-content.empty {
-          color: #94a3b8;
+          color: #cbd5e1;
         }
 
         .back-button {
           margin-top: 28px;
           padding: 13px 20px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.16);
           border-radius: 12px;
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(255, 255, 255, 0.08);
           color: white;
           cursor: pointer;
           font-size: 14px;
+          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
         }
 
         @media (max-width: 600px) {
