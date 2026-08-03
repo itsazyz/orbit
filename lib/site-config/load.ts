@@ -29,8 +29,24 @@ async function fetchConfigValue(
     .eq('key', key)
     .maybeSingle();
 
-  if (error || !data?.value) return null;
-  return data.value;
+  if (error) {
+    console.error(`[site_config] read "${key}" failed:`, error.message);
+    return null;
+  }
+
+  if (data == null || data.value == null) return null;
+
+  let value: unknown = data.value;
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      console.error(`[site_config] "${key}" value is a non-JSON string`);
+      return null;
+    }
+  }
+
+  return value;
 }
 
 export async function loadVisualPresetsServer(): Promise<VisualPresetsConfig> {

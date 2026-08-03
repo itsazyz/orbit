@@ -106,7 +106,13 @@ export function AdminPanel({ data }: AdminPanelProps) {
       }
 
       setSettings(payload);
-      notify(t('admin.messages.settingsSaved'));
+      const preview =
+        payload.announcementAr.trim() ||
+        payload.announcementEn.trim() ||
+        '—';
+      notify(
+        `${t('admin.messages.settingsSaved')} · ${preview.slice(0, 40)}`
+      );
     });
   }
 

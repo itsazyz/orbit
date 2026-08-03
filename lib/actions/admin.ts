@@ -60,44 +60,46 @@ async function upsertSiteConfig(
 ): Promise<ActionResult> {
   try {
     const admin = createServiceRoleClient();
-    const payload = {
-      key,
-      value,
-      updated_at: new Date().toISOString(),
-    };
+    // Ensure a plain JSON object (no class instances / prototypes)
+    const plainValue = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
 
-    const { data: existing, error: readError } = await admin
+    const { data, error } = await admin
       .from('site_config')
-      .select('key')
-      .eq('key', key)
-      .maybeSingle();
+      .upsert(
+        {
+          key,
+          value: plainValue,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'key' }
+      )
+      .select('key, value')
+      .single();
 
-    if (readError) {
-      return { ok: false, error: `Read site_config failed: ${readError.message}` };
+    if (error) {
+      return { ok: false, error: `Upsert failed: ${error.message}` };
     }
 
-    if (existing) {
-      const { error } = await admin
-        .from('site_config')
-        .update({
-          value: payload.value,
-          updated_at: payload.updated_at,
-        })
-        .eq('key', key);
+    if (!data?.key) {
+      return { ok: false, error: 'Upsert returned no row — check site_config table.' };
+    }
 
-      if (error) {
-        return { ok: false, error: `Update failed: ${error.message}` };
-      }
-    } else {
-      const { error } = await admin.from('site_config').insert({
-        key: payload.key,
-        value: payload.value,
-        updated_at: payload.updated_at,
-      });
+    // Verify round-trip read
+    const { data: verify, error: verifyError } = await admin
+      .from('site_config')
+      .select('value')
+      .eq('key', key)
+      .single();
 
-      if (error) {
-        return { ok: false, error: `Insert failed: ${error.message}` };
-      }
+    if (verifyError) {
+      return {
+        ok: false,
+        error: `Saved but could not re-read: ${verifyError.message}`,
+      };
+    }
+
+    if (verify?.value == null) {
+      return { ok: false, error: 'Saved but value is empty on re-read.' };
     }
 
     return { ok: true };
