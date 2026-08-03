@@ -151,9 +151,16 @@ export async function saveSiteSettings(
     normalized.announcementEn.trim().length > 0 ||
     normalized.announcementAr.trim().length > 0;
 
-  // If admin wrote announcement text, show the banner automatically
+  // Mirror non-empty text into the empty language so EN/AR both show something
+  let announcementEn = normalized.announcementEn.trim();
+  let announcementAr = normalized.announcementAr.trim();
+  if (announcementEn && !announcementAr) announcementAr = announcementEn;
+  if (announcementAr && !announcementEn) announcementEn = announcementAr;
+
   const value = {
     ...normalized,
+    announcementEn,
+    announcementAr,
     showAnnouncement: normalized.showAnnouncement || hasAnnouncementText,
   } as unknown as Record<string, unknown>;
 
@@ -162,6 +169,7 @@ export async function saveSiteSettings(
 
   // Safe now: admin UI loads client-side and won't remount from this
   revalidatePath('/', 'layout');
+  revalidatePath('/');
   return { ok: true };
 }
 

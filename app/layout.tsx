@@ -31,6 +31,9 @@ export const metadata: Metadata = {
   },
 };
 
+/** Always read fresh site settings (announcement) on each request */
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: {
@@ -40,17 +43,17 @@ export default async function RootLayout({
   const lang = parseLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   const settings = await loadSiteSettingsServer();
-  const announcementText =
-    lang === 'ar' ? settings.announcementAr : settings.announcementEn;
 
   return (
     <html lang={lang} dir={dir} className="dark">
       <body className={`${inter.variable} ${notoArabic.variable}`}>
         <LanguageProvider initialLang={lang}>
           <GlobalLanguageBar />
-          {settings.showAnnouncement ? (
-            <SiteAnnouncementBar text={announcementText} />
-          ) : null}
+          <SiteAnnouncementBar
+            show={settings.showAnnouncement}
+            announcementEn={settings.announcementEn}
+            announcementAr={settings.announcementAr}
+          />
           {children}
         </LanguageProvider>
       </body>

@@ -77,6 +77,17 @@ export async function loadHomepageContentAdmin(): Promise<HomepageContentConfig>
 
 export async function loadSiteSettingsServer(): Promise<SiteSettingsConfig> {
   noStore();
+
+  // Prefer service role so public pages always see admin-saved settings
+  // even if anon RLS/policies are misconfigured.
+  try {
+    const admin = createServiceRoleClient();
+    const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.siteSettings);
+    if (value != null) return normalizeSiteSettings(value);
+  } catch (error) {
+    console.error('[site-config] service-role settings read failed:', error);
+  }
+
   try {
     const supabase = await createServerClient();
     const value = await fetchConfigValue(supabase, SITE_CONFIG_KEYS.siteSettings);
