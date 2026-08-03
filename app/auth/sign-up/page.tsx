@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getPostAuthPath } from '@/lib/profile/client';
+import { normalizeSiteSettings } from '@/lib/site-config/defaults';
+import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { LanguageSelector } from '@/components/ui/LanguageSelector';
@@ -20,10 +22,36 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [allowSignups, setAllowSignups] = useState(true);
+  const [checkingSettings, setCheckingSettings] = useState(true);
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('site_config')
+          .select('value')
+          .eq('key', SITE_CONFIG_KEYS.siteSettings)
+          .maybeSingle();
+        setAllowSignups(normalizeSiteSettings(data?.value).allowSignups);
+      } catch {
+        setAllowSignups(true);
+      } finally {
+        setCheckingSettings(false);
+      }
+    }
+    loadSettings();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (!allowSignups) {
+      setError('New sign-ups are currently disabled.');
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -66,6 +94,14 @@ export default function SignUpPage() {
     router.push(`/auth/check-email?email=${encodeURIComponent(email)}`);
   }
 
+  if (checkingSettings) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center text-star-dim">
+        Loading…
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <div className="absolute end-6 top-6">
@@ -79,6 +115,12 @@ export default function SignUpPage() {
           </Link>
           <h1 className="mt-4 text-2xl font-light text-star">{t('auth.signUpTitle')}</h1>
         </div>
+
+        {!allowSignups ? (
+          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            New registrations are temporarily closed. Please check back later.
+          </p>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -109,7 +151,7 @@ export default function SignUpPage() {
 
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-          <Button type="submit" className="w-full" loading={loading}>
+          <Button type="submit" className="w-full" loading={loading} disabled={!allowSignups}>
             {t('auth.signUp')}
           </Button>
         </form>

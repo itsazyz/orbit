@@ -1,14 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { PlanetSurfaceStyle } from '@/types/database';
-import type { StarVisualType } from '@/lib/universe/visual-styles';
 import { computeAllStarLayouts } from '@/lib/universe/star-layout';
 
 export interface PublishStarInput {
   title: string;
   content: string;
   icon: string;
-  visualType: StarVisualType;
+  visualType: string;
 }
 
 export interface PublishPlanetInput {

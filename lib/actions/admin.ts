@@ -4,14 +4,21 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
-import type { AdminStats } from '@/lib/admin/dashboard-data';
+import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import {
-  DEFAULT_VISUAL_PRESETS,
-  STAR_VISUAL_OPTIONS,
-  PLANET_SURFACE_OPTIONS,
-} from '@/lib/universe/visual-styles';
-
-export type { AdminStats };
+  DEFAULT_HOMEPAGE_CONTENT,
+  DEFAULT_SITE_SETTINGS,
+  DEFAULT_VISUAL_PRESETS_CONFIG,
+  normalizeHomepageContent,
+  normalizeSiteSettings,
+  normalizeVisualPresets,
+} from '@/lib/site-config/defaults';
+import type {
+  HomepageContentConfig,
+  SiteSettingsConfig,
+  VisualPresetsConfig,
+} from '@/lib/site-config/types';
+import type { AdminStats } from '@/lib/admin/dashboard-data';
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -26,6 +33,12 @@ async function requireAdmin() {
   return user;
 }
 
+function revalidateSite() {
+  revalidatePath('/orbit-control');
+  revalidatePath('/create');
+  revalidatePath('/');
+}
+
 export async function getAdminStats(): Promise<AdminStats> {
   const user = await requireAdmin();
   const { loadAdminDashboard } = await import('@/lib/admin/dashboard-data');
@@ -33,37 +46,101 @@ export async function getAdminStats(): Promise<AdminStats> {
   return stats;
 }
 
-export async function getVisualPresets() {
-  const user = await requireAdmin();
-  const { loadAdminDashboard } = await import('@/lib/admin/dashboard-data');
-  const { presets } = await loadAdminDashboard(user.email);
-  return { ...DEFAULT_VISUAL_PRESETS, ...presets };
-}
-
-export async function saveVisualPresets(presets: {
-  starTypes: Array<{ id: string; labelEn: string; labelAr: string }>;
-  planetSurfaces: Array<{ id: string; labelEn: string; labelAr: string }>;
-}) {
+export async function saveVisualPresets(presets: VisualPresetsConfig) {
   await requireAdmin();
-
   const admin = createServiceRoleClient();
-  const value = {
-    starTypes: presets.starTypes.length ? presets.starTypes : STAR_VISUAL_OPTIONS,
-    planetSurfaces: presets.planetSurfaces.length
-      ? presets.planetSurfaces
-      : PLANET_SURFACE_OPTIONS,
-    planetMoods: DEFAULT_VISUAL_PRESETS.planetMoods,
-  };
+  const value = normalizeVisualPresets(presets);
 
   const { error } = await admin.from('site_config').upsert({
-    key: 'visual_presets',
+    key: SITE_CONFIG_KEYS.visualPresets,
     value,
   });
 
   if (error) throw new Error(error.message);
+  revalidateSite();
+  return { ok: true };
+}
 
+export async function saveHomepageContent(content: HomepageContentConfig) {
+  await requireAdmin();
+  const admin = createServiceRoleClient();
+  const value = normalizeHomepageContent(content);
+
+  const { error } = await admin.from('site_config').upsert({
+    key: SITE_CONFIG_KEYS.homepageContent,
+    value,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidateSite();
+  return { ok: true };
+}
+
+export async function saveSiteSettings(settings: SiteSettingsConfig) {
+  await requireAdmin();
+  const admin = createServiceRoleClient();
+  const value = normalizeSiteSettings(settings);
+
+  const { error } = await admin.from('site_config').upsert({
+    key: SITE_CONFIG_KEYS.siteSettings,
+    value,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidateSite();
+  return { ok: true };
+}
+
+export async function setPlanetPublished(profileId: string, isPublished: boolean) {
+  await requireAdmin();
+  const admin = createServiceRoleClient();
+
+  const { error } = await admin
+    .from('profiles')
+    .update({ is_published: isPublished })
+    .eq('id', profileId);
+
+  if (error) throw new Error(error.message);
   revalidatePath('/orbit-control');
-  revalidatePath('/create');
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function setPlanetVisibility(
+  profileId: string,
+  visibility: 'public' | 'private'
+) {
+  await requireAdmin();
+  const admin = createServiceRoleClient();
+
+  const { error } = await admin
+    .from('profiles')
+    .update({ visibility })
+    .eq('id', profileId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath('/orbit-control');
+  return { ok: true };
+}
+
+export async function deleteUserPlanet(profileId: string) {
+  await requireAdmin();
+  const admin = createServiceRoleClient();
+
+  const { error: starsError } = await admin.from('stars').delete().eq('profile_id', profileId);
+  if (starsError) throw new Error(starsError.message);
+
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({
+      is_published: false,
+      visibility: 'private',
+      bio: null,
+    })
+    .eq('id', profileId);
+
+  if (profileError) throw new Error(profileError.message);
+  revalidatePath('/orbit-control');
   return { ok: true };
 }
 
@@ -75,3 +152,5 @@ export async function checkIsAdmin(): Promise<boolean> {
     return false;
   }
 }
+
+export { DEFAULT_VISUAL_PRESETS_CONFIG, DEFAULT_HOMEPAGE_CONTENT, DEFAULT_SITE_SETTINGS };

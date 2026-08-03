@@ -101,11 +101,11 @@ export default async function OrbitControlPage() {
   }
 
   try {
-    const { stats, presets } = await loadAdminDashboard(userEmail);
+    const data = await loadAdminDashboard(userEmail);
 
     return (
       <main className="min-h-svh bg-gradient-to-b from-[#0a0d16] to-[#05060a]">
-        <AdminPanel stats={stats} initialPresets={presets} />
+        <AdminPanel data={data} />
       </main>
     );
   } catch (error) {
