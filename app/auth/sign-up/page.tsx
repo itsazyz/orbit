@@ -9,7 +9,6 @@ import { normalizeSiteSettings } from '@/lib/site-config/defaults';
 import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { useLanguage } from '@/lib/i18n/context';
 import { getAuthErrorKey } from '@/lib/auth/errors';
 
@@ -104,10 +103,6 @@ export default function SignUpPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
-      <div className="absolute end-6 top-6">
-        <LanguageSelector variant="minimal" />
-      </div>
-
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link href="/" className="text-sm tracking-widest text-star-dim hover:text-star">

@@ -1,14 +1,3 @@
-.create-lang-bar {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  inset-inline-end: max(12px, env(safe-area-inset-right));
-  z-index: 10;
-}
-
-[dir="rtl"] .create-lang-bar {
-  inset-inline-end: max(12px, env(safe-area-inset-right));
-}
-
 .create-page {
   overflow-x: hidden;
   width: 100%;

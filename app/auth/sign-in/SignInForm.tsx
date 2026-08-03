@@ -8,7 +8,6 @@ import { getPostAuthPath } from '@/lib/profile/client';
 import { isSupabaseConfigured } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { useLanguage } from '@/lib/i18n/context';
 
 function safeRedirectPath(path: string | null): string {
@@ -111,10 +110,6 @@ export function SignInForm() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center px-6">
-      <div className="absolute end-6 top-6">
-        <LanguageSelector variant="minimal" />
-      </div>
-
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <Link href="/" className="text-sm tracking-widest text-star-dim hover:text-star">

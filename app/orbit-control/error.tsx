@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { useLanguage } from '@/lib/i18n/context';
 
 export default function OrbitControlError({
   error,
@@ -11,28 +12,31 @@ export default function OrbitControlError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t, dir, lang } = useLanguage();
+
   useEffect(() => {
     console.error('[orbit-control]', error);
   }, [error]);
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-[#05060a] px-6 text-center text-white">
+    <main
+      dir={dir}
+      className="relative flex min-h-svh items-center justify-center bg-[#05060a] px-6 text-center text-white"
+    >
       <div className="max-w-lg">
-        <h1 className="text-2xl font-semibold">Could not load admin panel</h1>
-        <p className="mt-3 text-slate-400">
-          Check <code className="text-violet-400">ORBIT_ADMIN_EMAIL</code> and{' '}
-          <code className="text-violet-400">SUPABASE_SERVICE_ROLE_KEY</code> in Vercel, then
-          redeploy.
-        </p>
+        <h1 className="text-2xl font-semibold">{t('admin.errors.setupTitle')}</h1>
+        <p className="mt-3 text-slate-400">{t('admin.errors.setupMessage')}</p>
         {error.digest ? (
           <p className="mt-2 text-xs text-slate-600">Digest: {error.digest}</p>
         ) : null}
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button type="button" onClick={() => reset()}>
-            Try again
+            {lang === 'ar' ? 'إعادة المحاولة' : 'Try again'}
           </Button>
           <Link href="/auth/sign-in?redirectTo=/orbit-control">
-            <Button variant="secondary">Sign in again</Button>
+            <Button variant="secondary">
+              {lang === 'ar' ? 'تسجيل الدخول مجدداً' : 'Sign in again'}
+            </Button>
           </Link>
         </div>
       </div>

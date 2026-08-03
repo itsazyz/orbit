@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Noto_Sans_Arabic } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { LanguageProvider } from '@/lib/i18n/context';
+import { GlobalLanguageBar } from '@/components/layout/GlobalLanguageBar';
 import { LANGUAGE_COOKIE, parseLanguage } from '@/lib/i18n';
 import './globals.css';
 
@@ -41,6 +42,7 @@ export default async function RootLayout({
     <html lang={lang} dir={dir} className="dark">
       <body className={`${inter.variable} ${notoArabic.variable}`}>
         <LanguageProvider initialLang={lang}>
+          <GlobalLanguageBar />
           {children}
         </LanguageProvider>
       </body>

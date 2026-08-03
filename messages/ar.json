@@ -273,5 +273,142 @@
     "loading": "جاري التحميل…",
     "cancel": "إلغاء",
     "continue": "متابعة"
+  },
+  "admin": {
+    "eyebrow": "تحكم ORBIT",
+    "title": "لوحة التحكم",
+    "subtitle": "إدارة المستخدمين والكواكب والصفحة الرئيسية وإعدادات الإنشاء",
+    "viewSite": "← عرض الموقع",
+    "configured": "مضبوط",
+    "notConfigured": "غير مضبوط بعد",
+    "signedInAs": "مسجّل الدخول كـ:",
+    "redeployHint": "بعد تعديل المتغيرات في Vercel، اضغط Redeploy.",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "users": "المستخدمون",
+      "planets": "الكواكب",
+      "presets": "الإعدادات البصرية",
+      "homepage": "الصفحة الرئيسية",
+      "settings": "إعدادات الموقع"
+    },
+    "stats": {
+      "users": "المستخدمون المسجّلون",
+      "profiles": "الملفات الشخصية",
+      "published": "الكواكب المنشورة",
+      "stars": "إجمالي النجوم"
+    },
+    "overview": {
+      "recentTitle": "آخر الكواكب",
+      "recentDesc": "آخر العوالم المنشورة",
+      "view": "عرض ←",
+      "empty": "لا توجد كواكب منشورة بعد."
+    },
+    "users": {
+      "title": "المستخدمون المسجّلون",
+      "desc": "كل الملفات المرتبطة بحسابات Auth",
+      "email": "البريد",
+      "username": "اسم المستخدم",
+      "stars": "النجوم",
+      "status": "الحالة",
+      "actions": "إجراءات",
+      "published": "منشور",
+      "draft": "مسودة",
+      "view": "عرض",
+      "publish": "نشر",
+      "unpublish": "إلغاء النشر"
+    },
+    "planets": {
+      "title": "كل الكواكب",
+      "desc": "إدارة المحتوى والظهور",
+      "planet": "الكوكب",
+      "stars": "النجوم",
+      "music": "الموسيقى",
+      "visibility": "الخصوصية",
+      "actions": "إجراءات",
+      "on": "مفعّلة",
+      "off": "متوقفة",
+      "view": "عرض",
+      "toggleVisibility": "تبديل الخصوصية",
+      "reset": "إعادة ضبط",
+      "confirmReset": "إلغاء نشر هذا الكوكب وحذف كل النجوم؟"
+    },
+    "presets": {
+      "title": "إعدادات صفحة الإنشاء",
+      "desc": "أشكال النجوم وأسطح الكواكب والأمزجة في /create",
+      "add": "+ إضافة",
+      "save": "حفظ الإعدادات",
+      "reset": "إرجاع الافتراضي",
+      "saving": "جاري الحفظ…",
+      "kinds": {
+        "starTypes": "أشكال النجوم",
+        "planetSurfaces": "أسطح الكواكب",
+        "planetMoods": "أمزجة الكواكب"
+      },
+      "newOptionEn": "New option",
+      "newOptionAr": "خيار جديد"
+    },
+    "homepage": {
+      "title": "محتوى الصفحة الرئيسية",
+      "desc": "تعديل نصوص الصفحة (EN + AR)",
+      "siteName": "اسم الموقع",
+      "demoDomain": "الدومين التجريبي",
+      "heroColor": "لون كوكب البطل",
+      "english": "English",
+      "arabic": "العربية",
+      "examples": "أمثلة (مفصولة بفاصلة)",
+      "save": "حفظ الصفحة الرئيسية",
+      "reset": "إرجاع الافتراضي",
+      "saving": "جاري الحفظ…",
+      "fields": {
+        "heroTitle": "عنوان البطل",
+        "heroSubtitle": "وصف البطل",
+        "section1Title": "عنوان القسم 1",
+        "section1Desc": "وصف القسم 1",
+        "section2Title": "عنوان القسم 2",
+        "section2Desc": "وصف القسم 2",
+        "footerTagline": "شعار التذييل",
+        "footerCta": "زر التذييل"
+      }
+    },
+    "settings": {
+      "title": "إعدادات الموقع",
+      "desc": "وضع الصيانة والإعلانات",
+      "maintenance": "وضع الصيانة (صفحة صيانة على الرئيسية)",
+      "allowSignups": "السماح بتسجيل مستخدمين جدد",
+      "announcement": "إظهار شريط إعلان على الرئيسية",
+      "maintenanceEn": "رسالة الصيانة (EN)",
+      "maintenanceAr": "رسالة الصيانة (AR)",
+      "announcementEn": "الإعلان (EN)",
+      "announcementAr": "الإعلان (AR)",
+      "save": "حفظ الإعدادات",
+      "reset": "إرجاع الافتراضي",
+      "saving": "جاري الحفظ…"
+    },
+    "messages": {
+      "presetsSaved": "تم حفظ الإعدادات البصرية. ستُحدَّث صفحة الإنشاء فوراً.",
+      "homepageSaved": "تم حفظ الصفحة الرئيسية. افتح / للمعاينة.",
+      "settingsSaved": "تم حفظ إعدادات الموقع.",
+      "planetPublished": "تم نشر الكوكب.",
+      "planetUnpublished": "تم إلغاء نشر الكوكب.",
+      "visibilitySet": "تم ضبط الخصوصية على {value}.",
+      "planetReset": "تم إعادة ضبط الكوكب (إلغاء النشر وحذف النجوم).",
+      "saveFailed": "فشل الحفظ.",
+      "updateFailed": "فشل التحديث.",
+      "resetFailed": "فشل إعادة الضبط."
+    },
+    "errors": {
+      "supabaseTitle": "Supabase غير مضبوط",
+      "supabaseMessage": "أضف NEXT_PUBLIC_SUPABASE_URL و NEXT_PUBLIC_SUPABASE_ANON_KEY في Vercel ثم Redeploy.",
+      "keyTitle": "مفتاح الأدمن ناقص",
+      "keyMessage": "أضف SUPABASE_SERVICE_ROLE_KEY في Vercel (Supabase → Settings → API → service_role).",
+      "sessionTitle": "خطأ في الجلسة",
+      "sessionMessage": "تعذّر التحقق من جلسة تسجيل الدخول.",
+      "setupTitle": "إعداد الأدمن غير مكتمل",
+      "setupMessage": "تعذّر تحميل لوحة التحكم. شغّل migration 0007 في Supabase SQL Editor إن لم تكن فعلت.",
+      "accessDeniedTitle": "الوصول مرفوض",
+      "accessDeniedMessage": "هذه الصفحة خاصة. اضبط ORBIT_ADMIN_EMAIL في Vercel على بريدك ({status}).",
+      "envServiceRole": "SUPABASE_SERVICE_ROLE_KEY — Supabase → Settings → API → service_role",
+      "envAdminEmail": "ORBIT_ADMIN_EMAIL — بريد تسجيل الدخول"
+    }
   }
 }

@@ -9,7 +9,6 @@ import type { PlanetSurfaceStyle } from "@/types/database";
 import { loadPlanetForEditor } from "@/lib/profile/client";
 import { publishUserPlanet } from "@/lib/profile/publish-planet";
 import { MusicPicker } from "@/components/create/MusicPicker";
-import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { useLanguage } from "@/lib/i18n/context";
 import "./create.css";
 
@@ -280,9 +279,6 @@ export function CreatePageClient({
   if (loading) {
     return (
       <main style={styles.main} className="create-page">
-        <div className="create-lang-bar">
-          <LanguageSelector variant="minimal" />
-        </div>
         <div style={{ ...styles.container, textAlign: "center", paddingTop: 80 }} className="create-container">
           <p style={{ color: "#aeb6cf" }}>{t("create.loading")}</p>
         </div>
@@ -293,9 +289,6 @@ export function CreatePageClient({
   if (started) {
     return (
       <main style={styles.main} className="create-page">
-        <div className="create-lang-bar">
-          <LanguageSelector variant="minimal" />
-        </div>
         <div style={styles.container} className="create-container">
           <h1 style={styles.pageTitle}>
             {isEditing ? t("create.customizeTitle") : t("create.buildTitle")}
@@ -756,9 +749,6 @@ export function CreatePageClient({
 
   return (
     <main style={styles.landing} className="create-landing">
-      <div className="create-lang-bar">
-        <LanguageSelector variant="minimal" />
-      </div>
       <div style={styles.landingContent}>
         <div style={styles.heroPlanet} />
 

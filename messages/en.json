@@ -273,5 +273,142 @@
     "loading": "Loading…",
     "cancel": "Cancel",
     "continue": "Continue"
+  },
+  "admin": {
+    "eyebrow": "ORBIT CONTROL",
+    "title": "Admin dashboard",
+    "subtitle": "Manage users, planets, homepage, and create-flow presets",
+    "viewSite": "← View site",
+    "configured": "configured",
+    "notConfigured": "not configured yet",
+    "signedInAs": "Signed in as:",
+    "redeployHint": "After changing variables in Vercel, click Redeploy.",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Users",
+      "planets": "Planets",
+      "presets": "Visual presets",
+      "homepage": "Homepage",
+      "settings": "Site settings"
+    },
+    "stats": {
+      "users": "Registered users",
+      "profiles": "Profiles",
+      "published": "Published planets",
+      "stars": "Total stars"
+    },
+    "overview": {
+      "recentTitle": "Recent planets",
+      "recentDesc": "Latest published worlds",
+      "view": "View →",
+      "empty": "No published planets yet."
+    },
+    "users": {
+      "title": "Registered users",
+      "desc": "All profiles linked to auth accounts",
+      "email": "Email",
+      "username": "Username",
+      "stars": "Stars",
+      "status": "Status",
+      "actions": "Actions",
+      "published": "Published",
+      "draft": "Draft",
+      "view": "View",
+      "publish": "Publish",
+      "unpublish": "Unpublish"
+    },
+    "planets": {
+      "title": "All planets",
+      "desc": "Moderate content and visibility",
+      "planet": "Planet",
+      "stars": "Stars",
+      "music": "Music",
+      "visibility": "Visibility",
+      "actions": "Actions",
+      "on": "On",
+      "off": "Off",
+      "view": "View",
+      "toggleVisibility": "Toggle visibility",
+      "reset": "Reset",
+      "confirmReset": "Unpublish this planet and remove all stars?"
+    },
+    "presets": {
+      "title": "Create flow presets",
+      "desc": "Star shapes, planet surfaces, and moods shown on /create",
+      "add": "+ Add",
+      "save": "Save presets",
+      "reset": "Reset defaults",
+      "saving": "Saving…",
+      "kinds": {
+        "starTypes": "Star shapes",
+        "planetSurfaces": "Planet surfaces",
+        "planetMoods": "Planet moods"
+      },
+      "newOptionEn": "New option",
+      "newOptionAr": "خيار جديد"
+    },
+    "homepage": {
+      "title": "Homepage content",
+      "desc": "Edit landing page copy (EN + AR)",
+      "siteName": "Site name",
+      "demoDomain": "Demo domain",
+      "heroColor": "Hero planet color",
+      "english": "English",
+      "arabic": "Arabic",
+      "examples": "Examples (comma separated)",
+      "save": "Save homepage",
+      "reset": "Reset defaults",
+      "saving": "Saving…",
+      "fields": {
+        "heroTitle": "Hero title",
+        "heroSubtitle": "Hero subtitle",
+        "section1Title": "Section 1 title",
+        "section1Desc": "Section 1 description",
+        "section2Title": "Section 2 title",
+        "section2Desc": "Section 2 description",
+        "footerTagline": "Footer tagline",
+        "footerCta": "Footer CTA"
+      }
+    },
+    "settings": {
+      "title": "Site settings",
+      "desc": "Maintenance mode and announcements",
+      "maintenance": "Maintenance mode (shows maintenance page on homepage)",
+      "allowSignups": "Allow new sign-ups",
+      "announcement": "Show announcement banner on homepage",
+      "maintenanceEn": "Maintenance message (EN)",
+      "maintenanceAr": "Maintenance message (AR)",
+      "announcementEn": "Announcement (EN)",
+      "announcementAr": "Announcement (AR)",
+      "save": "Save settings",
+      "reset": "Reset defaults",
+      "saving": "Saving…"
+    },
+    "messages": {
+      "presetsSaved": "Visual presets saved. Create page will update immediately.",
+      "homepageSaved": "Homepage saved. Visit / to preview.",
+      "settingsSaved": "Site settings saved.",
+      "planetPublished": "Planet published.",
+      "planetUnpublished": "Planet unpublished.",
+      "visibilitySet": "Visibility set to {value}.",
+      "planetReset": "Planet reset (unpublished, stars removed).",
+      "saveFailed": "Save failed.",
+      "updateFailed": "Update failed.",
+      "resetFailed": "Reset failed."
+    },
+    "errors": {
+      "supabaseTitle": "Supabase not configured",
+      "supabaseMessage": "Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel, then redeploy.",
+      "keyTitle": "Admin key missing",
+      "keyMessage": "Add SUPABASE_SERVICE_ROLE_KEY in Vercel (Supabase → Settings → API → service_role secret), then redeploy.",
+      "sessionTitle": "Session error",
+      "sessionMessage": "Could not verify your session.",
+      "setupTitle": "Admin setup incomplete",
+      "setupMessage": "Could not load admin dashboard. Also run migration 0007 in Supabase SQL Editor if you have not already.",
+      "accessDeniedTitle": "Access denied",
+      "accessDeniedMessage": "This page is private. Set ORBIT_ADMIN_EMAIL in Vercel to your account email ({status}).",
+      "envServiceRole": "SUPABASE_SERVICE_ROLE_KEY — Supabase → Settings → API → service_role",
+      "envAdminEmail": "ORBIT_ADMIN_EMAIL — your login email"
+    }
   }
 }

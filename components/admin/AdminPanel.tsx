@@ -22,6 +22,8 @@ import type {
   SiteSettingsConfig,
   VisualPresetsConfig,
 } from '@/lib/site-config/types';
+import { useLanguage } from '@/lib/i18n/context';
+import { interpolate } from '@/lib/i18n';
 import { AdminCard, AdminField, AdminTabs, type AdminTab } from './AdminUi';
 
 interface AdminPanelProps {
@@ -29,6 +31,7 @@ interface AdminPanelProps {
 }
 
 export function AdminPanel({ data }: AdminPanelProps) {
+  const { t, dir } = useLanguage();
   const [tab, setTab] = useState<AdminTab>('overview');
   const [message, setMessage] = useState('');
   const [pending, startTransition] = useTransition();
@@ -38,6 +41,15 @@ export function AdminPanel({ data }: AdminPanelProps) {
   const [settings, setSettings] = useState<SiteSettingsConfig>(data.siteSettings);
   const [users, setUsers] = useState(data.users);
   const [planets, setPlanets] = useState(data.planets);
+
+  const tabLabels: Record<AdminTab, string> = {
+    overview: t('admin.tabs.overview'),
+    users: t('admin.tabs.users'),
+    planets: t('admin.tabs.planets'),
+    presets: t('admin.tabs.presets'),
+    homepage: t('admin.tabs.homepage'),
+    settings: t('admin.tabs.settings'),
+  };
 
   const publishedPlanets = useMemo(
     () => planets.filter((planet) => planet.isPublished),
@@ -52,9 +64,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
     startTransition(async () => {
       try {
         await saveVisualPresets(presets);
-        notify('Visual presets saved. Create page will update immediately.');
+        notify(t('admin.messages.presetsSaved'));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Save failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
       }
     });
   }
@@ -63,9 +75,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
     startTransition(async () => {
       try {
         await saveHomepageContent(homepage);
-        notify('Homepage saved. Visit / to preview.');
+        notify(t('admin.messages.homepageSaved'));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Save failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
       }
     });
   }
@@ -74,9 +86,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
     startTransition(async () => {
       try {
         await saveSiteSettings(settings);
-        notify('Site settings saved.');
+        notify(t('admin.messages.settingsSaved'));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Save failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
       }
     });
   }
@@ -95,9 +107,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
             user.id === profileId ? { ...user, isPublished: next } : user
           )
         );
-        notify(next ? 'Planet published.' : 'Planet unpublished.');
+        notify(next ? t('admin.messages.planetPublished') : t('admin.messages.planetUnpublished'));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Update failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.updateFailed'));
       }
     });
   }
@@ -111,15 +123,15 @@ export function AdminPanel({ data }: AdminPanelProps) {
             planet.id === profileId ? { ...planet, visibility: next } : planet
           )
         );
-        notify(`Visibility set to ${next}.`);
+        notify(interpolate(t('admin.messages.visibilitySet'), { value: next }));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Update failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.updateFailed'));
       }
     });
   }
 
   function resetPlanet(profileId: string) {
-    if (!confirm('Unpublish this planet and remove all stars?')) return;
+    if (!confirm(t('admin.planets.confirmReset'))) return;
 
     startTransition(async () => {
       try {
@@ -138,9 +150,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
               : user
           )
         );
-        notify('Planet reset (unpublished, stars removed).');
+        notify(t('admin.messages.planetReset'));
       } catch (e) {
-        notify(e instanceof Error ? e.message : 'Reset failed.');
+        notify(e instanceof Error ? e.message : t('admin.messages.resetFailed'));
       }
     });
   }
@@ -149,36 +161,50 @@ export function AdminPanel({ data }: AdminPanelProps) {
     const id = `custom_${Date.now()}`;
     setPresets((current) => ({
       ...current,
-      [kind]: [...current[kind], { id, labelEn: 'New option', labelAr: 'خيار جديد' }],
+      [kind]: [
+        ...current[kind],
+        { id, labelEn: t('admin.presets.newOptionEn'), labelAr: t('admin.presets.newOptionAr') },
+      ],
     }));
   }
 
+  const homepageFields = [
+    'heroTitle',
+    'heroSubtitle',
+    'section1Title',
+    'section1Desc',
+    'section2Title',
+    'section2Desc',
+    'footerTagline',
+    'footerCta',
+  ] as const;
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12 text-white">
+    <div dir={dir} className="mx-auto max-w-6xl px-6 py-12 text-white">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm tracking-[0.3em] text-violet-400">ORBIT CONTROL</p>
-          <h1 className="mt-2 text-3xl font-light">Admin dashboard</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Manage users, planets, homepage, and create-flow presets
-          </p>
+          <p className="text-sm tracking-[0.3em] text-violet-400">{t('admin.eyebrow')}</p>
+          <h1 className="mt-2 text-3xl font-light">{t('admin.title')}</h1>
+          <p className="mt-1 text-sm text-slate-400">{t('admin.subtitle')}</p>
         </div>
-        <Link href="/" className="text-sm text-slate-400 hover:text-white">
-          ← View site
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="text-sm text-slate-400 hover:text-white">
+            {t('admin.viewSite')}
+          </Link>
+        </div>
       </header>
 
-      <AdminTabs active={tab} onChange={setTab} />
+      <AdminTabs active={tab} onChange={setTab} labels={tabLabels} />
 
       <div className="mt-8 space-y-8">
         {tab === 'overview' ? (
           <>
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: 'Registered users', value: data.stats.totalUsers },
-                { label: 'Profiles', value: data.stats.totalProfiles },
-                { label: 'Published planets', value: data.stats.publishedProfiles },
-                { label: 'Total stars', value: data.stats.totalStars },
+                { label: t('admin.stats.users'), value: data.stats.totalUsers },
+                { label: t('admin.stats.profiles'), value: data.stats.totalProfiles },
+                { label: t('admin.stats.published'), value: data.stats.publishedProfiles },
+                { label: t('admin.stats.stars'), value: data.stats.totalStars },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -190,7 +216,10 @@ export function AdminPanel({ data }: AdminPanelProps) {
               ))}
             </section>
 
-            <AdminCard title="Recent planets" description="Latest published worlds">
+            <AdminCard
+              title={t('admin.overview.recentTitle')}
+              description={t('admin.overview.recentDesc')}
+            >
               <ul className="space-y-2">
                 {publishedPlanets.slice(0, 8).map((planet) => (
                   <li
@@ -206,12 +235,12 @@ export function AdminPanel({ data }: AdminPanelProps) {
                       className="text-violet-300 hover:text-white"
                       target="_blank"
                     >
-                      View →
+                      {t('admin.overview.view')}
                     </Link>
                   </li>
                 ))}
                 {publishedPlanets.length === 0 ? (
-                  <p className="text-sm text-slate-500">No published planets yet.</p>
+                  <p className="text-sm text-slate-500">{t('admin.overview.empty')}</p>
                 ) : null}
               </ul>
             </AdminCard>
@@ -219,26 +248,26 @@ export function AdminPanel({ data }: AdminPanelProps) {
         ) : null}
 
         {tab === 'users' ? (
-          <AdminCard title="Registered users" description="All profiles linked to auth accounts">
+          <AdminCard title={t('admin.users.title')} description={t('admin.users.desc')}>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+              <table className="min-w-full text-start text-sm">
                 <thead className="text-slate-500">
                   <tr>
-                    <th className="pb-3 pr-4">Email</th>
-                    <th className="pb-3 pr-4">Username</th>
-                    <th className="pb-3 pr-4">Stars</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3">Actions</th>
+                    <th className="pb-3 pe-4">{t('admin.users.email')}</th>
+                    <th className="pb-3 pe-4">{t('admin.users.username')}</th>
+                    <th className="pb-3 pe-4">{t('admin.users.stars')}</th>
+                    <th className="pb-3 pe-4">{t('admin.users.status')}</th>
+                    <th className="pb-3">{t('admin.users.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((user) => (
                     <tr key={user.id} className="border-t border-white/5">
-                      <td className="py-3 pr-4 text-slate-300">{user.email}</td>
-                      <td className="py-3 pr-4">orbit/{user.username}</td>
-                      <td className="py-3 pr-4">{user.starCount}</td>
-                      <td className="py-3 pr-4">
-                        {user.isPublished ? 'Published' : 'Draft'}
+                      <td className="py-3 pe-4 text-slate-300">{user.email}</td>
+                      <td className="py-3 pe-4">orbit/{user.username}</td>
+                      <td className="py-3 pe-4">{user.starCount}</td>
+                      <td className="py-3 pe-4">
+                        {user.isPublished ? t('admin.users.published') : t('admin.users.draft')}
                       </td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-2">
@@ -248,7 +277,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                               target="_blank"
                               className="text-violet-300 hover:text-white"
                             >
-                              View
+                              {t('admin.users.view')}
                             </Link>
                           ) : null}
                           <button
@@ -256,7 +285,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
                             onClick={() => togglePublish(user.id, !user.isPublished)}
                             className="text-slate-400 hover:text-white"
                           >
-                            {user.isPublished ? 'Unpublish' : 'Publish'}
+                            {user.isPublished
+                              ? t('admin.users.unpublish')
+                              : t('admin.users.publish')}
                           </button>
                         </div>
                       </td>
@@ -269,22 +300,22 @@ export function AdminPanel({ data }: AdminPanelProps) {
         ) : null}
 
         {tab === 'planets' ? (
-          <AdminCard title="All planets" description="Moderate content and visibility">
+          <AdminCard title={t('admin.planets.title')} description={t('admin.planets.desc')}>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+              <table className="min-w-full text-start text-sm">
                 <thead className="text-slate-500">
                   <tr>
-                    <th className="pb-3 pr-4">Planet</th>
-                    <th className="pb-3 pr-4">Stars</th>
-                    <th className="pb-3 pr-4">Music</th>
-                    <th className="pb-3 pr-4">Visibility</th>
-                    <th className="pb-3">Actions</th>
+                    <th className="pb-3 pe-4">{t('admin.planets.planet')}</th>
+                    <th className="pb-3 pe-4">{t('admin.planets.stars')}</th>
+                    <th className="pb-3 pe-4">{t('admin.planets.music')}</th>
+                    <th className="pb-3 pe-4">{t('admin.planets.visibility')}</th>
+                    <th className="pb-3">{t('admin.planets.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {planets.map((planet) => (
                     <tr key={planet.id} className="border-t border-white/5">
-                      <td className="py-3 pr-4">
+                      <td className="py-3 pe-4">
                         <div className="flex items-center gap-2">
                           <span
                             className="inline-block h-3 w-3 rounded-full"
@@ -296,11 +327,11 @@ export function AdminPanel({ data }: AdminPanelProps) {
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 pr-4">{planet.starCount}</td>
-                      <td className="py-3 pr-4">
-                        {planet.musicEnabled ? 'On' : 'Off'}
+                      <td className="py-3 pe-4">{planet.starCount}</td>
+                      <td className="py-3 pe-4">
+                        {planet.musicEnabled ? t('admin.planets.on') : t('admin.planets.off')}
                       </td>
-                      <td className="py-3 pr-4">{planet.visibility}</td>
+                      <td className="py-3 pe-4">{planet.visibility}</td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-2">
                           {planet.isPublished ? (
@@ -309,7 +340,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                               target="_blank"
                               className="text-violet-300"
                             >
-                              View
+                              {t('admin.planets.view')}
                             </Link>
                           ) : null}
                           <button
@@ -322,14 +353,14 @@ export function AdminPanel({ data }: AdminPanelProps) {
                             }
                             className="text-slate-400 hover:text-white"
                           >
-                            Toggle visibility
+                            {t('admin.planets.toggleVisibility')}
                           </button>
                           <button
                             type="button"
                             onClick={() => resetPlanet(planet.id)}
                             className="text-red-300 hover:text-red-200"
                           >
-                            Reset
+                            {t('admin.planets.reset')}
                           </button>
                         </div>
                       </td>
@@ -342,22 +373,19 @@ export function AdminPanel({ data }: AdminPanelProps) {
         ) : null}
 
         {tab === 'presets' ? (
-          <AdminCard
-            title="Create flow presets"
-            description="Star shapes, planet surfaces, and moods shown on /create"
-          >
+          <AdminCard title={t('admin.presets.title')} description={t('admin.presets.desc')}>
             {(['starTypes', 'planetSurfaces', 'planetMoods'] as const).map((kind) => (
               <div key={kind} className="mb-8">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-medium capitalize text-violet-300">
-                    {kind.replace(/([A-Z])/g, ' $1')}
+                  <h3 className="font-medium text-violet-300">
+                    {t(`admin.presets.kinds.${kind}`)}
                   </h3>
                   <button
                     type="button"
                     onClick={() => addPresetRow(kind)}
                     className="text-sm text-violet-400 hover:text-violet-200"
                   >
-                    + Add
+                    {t('admin.presets.add')}
                   </button>
                 </div>
                 <ul className="space-y-2">
@@ -404,7 +432,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                 onClick={savePresets}
                 className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium hover:bg-violet-500 disabled:opacity-50"
               >
-                {pending ? 'Saving…' : 'Save presets'}
+                {pending ? t('admin.presets.saving') : t('admin.presets.save')}
               </button>
               <button
                 type="button"
@@ -417,27 +445,27 @@ export function AdminPanel({ data }: AdminPanelProps) {
                 }
                 className="rounded-xl border border-white/15 px-5 py-2.5 text-sm hover:bg-white/5"
               >
-                Reset defaults
+                {t('admin.presets.reset')}
               </button>
             </div>
           </AdminCard>
         ) : null}
 
         {tab === 'homepage' ? (
-          <AdminCard title="Homepage content" description="Edit landing page copy (EN + AR)">
+          <AdminCard title={t('admin.homepage.title')} description={t('admin.homepage.desc')}>
             <div className="grid gap-4 md:grid-cols-2">
               <AdminField
-                label="Site name"
+                label={t('admin.homepage.siteName')}
                 value={homepage.siteName}
                 onChange={(siteName) => setHomepage({ ...homepage, siteName })}
               />
               <AdminField
-                label="Demo domain"
+                label={t('admin.homepage.demoDomain')}
                 value={homepage.demoDomain}
                 onChange={(demoDomain) => setHomepage({ ...homepage, demoDomain })}
               />
               <AdminField
-                label="Hero planet color"
+                label={t('admin.homepage.heroColor')}
                 value={homepage.heroPlanet.color}
                 onChange={(color) =>
                   setHomepage({
@@ -451,23 +479,12 @@ export function AdminPanel({ data }: AdminPanelProps) {
             {(['en', 'ar'] as const).map((lang) => (
               <div key={lang} className="mt-8 space-y-3">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-300">
-                  {lang === 'en' ? 'English' : 'Arabic'}
+                  {lang === 'en' ? t('admin.homepage.english') : t('admin.homepage.arabic')}
                 </h3>
-                {(
-                  [
-                    'heroTitle',
-                    'heroSubtitle',
-                    'section1Title',
-                    'section1Desc',
-                    'section2Title',
-                    'section2Desc',
-                    'footerTagline',
-                    'footerCta',
-                  ] as const
-                ).map((field) => (
+                {homepageFields.map((field) => (
                   <AdminField
                     key={`${lang}-${field}`}
-                    label={field}
+                    label={t(`admin.homepage.fields.${field}`)}
                     value={homepage[lang][field] ?? ''}
                     dir={lang === 'ar' ? 'rtl' : 'ltr'}
                     multiline={field.includes('Desc') || field.includes('Subtitle')}
@@ -480,7 +497,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                   />
                 ))}
                 <AdminField
-                  label="Examples (comma separated)"
+                  label={t('admin.homepage.examples')}
                   value={homepage.examples[lang].join(', ')}
                   dir={lang === 'ar' ? 'rtl' : 'ltr'}
                   onChange={(value) =>
@@ -505,20 +522,20 @@ export function AdminPanel({ data }: AdminPanelProps) {
               onClick={saveHomepage}
               className="mt-6 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium hover:bg-violet-500 disabled:opacity-50"
             >
-              {pending ? 'Saving…' : 'Save homepage'}
+              {pending ? t('admin.homepage.saving') : t('admin.homepage.save')}
             </button>
             <button
               type="button"
               onClick={() => setHomepage(DEFAULT_HOMEPAGE_CONTENT)}
               className="ms-3 rounded-xl border border-white/15 px-5 py-2.5 text-sm hover:bg-white/5"
             >
-              Reset defaults
+              {t('admin.homepage.reset')}
             </button>
           </AdminCard>
         ) : null}
 
         {tab === 'settings' ? (
-          <AdminCard title="Site settings" description="Maintenance mode and announcements">
+          <AdminCard title={t('admin.settings.title')} description={t('admin.settings.desc')}>
             <div className="space-y-4">
               <label className="flex items-center gap-3 text-sm">
                 <input
@@ -528,7 +545,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                     setSettings({ ...settings, maintenanceMode: e.target.checked })
                   }
                 />
-                Maintenance mode (shows maintenance page on homepage)
+                {t('admin.settings.maintenance')}
               </label>
               <label className="flex items-center gap-3 text-sm">
                 <input
@@ -538,7 +555,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                     setSettings({ ...settings, allowSignups: e.target.checked })
                   }
                 />
-                Allow new sign-ups
+                {t('admin.settings.allowSignups')}
               </label>
               <label className="flex items-center gap-3 text-sm">
                 <input
@@ -548,17 +565,17 @@ export function AdminPanel({ data }: AdminPanelProps) {
                     setSettings({ ...settings, showAnnouncement: e.target.checked })
                   }
                 />
-                Show announcement banner on homepage
+                {t('admin.settings.announcement')}
               </label>
               <AdminField
-                label="Maintenance message (EN)"
+                label={t('admin.settings.maintenanceEn')}
                 value={settings.maintenanceMessageEn}
                 onChange={(maintenanceMessageEn) =>
                   setSettings({ ...settings, maintenanceMessageEn })
                 }
               />
               <AdminField
-                label="Maintenance message (AR)"
+                label={t('admin.settings.maintenanceAr')}
                 value={settings.maintenanceMessageAr}
                 dir="rtl"
                 onChange={(maintenanceMessageAr) =>
@@ -566,12 +583,12 @@ export function AdminPanel({ data }: AdminPanelProps) {
                 }
               />
               <AdminField
-                label="Announcement (EN)"
+                label={t('admin.settings.announcementEn')}
                 value={settings.announcementEn}
                 onChange={(announcementEn) => setSettings({ ...settings, announcementEn })}
               />
               <AdminField
-                label="Announcement (AR)"
+                label={t('admin.settings.announcementAr')}
                 value={settings.announcementAr}
                 dir="rtl"
                 onChange={(announcementAr) => setSettings({ ...settings, announcementAr })}
@@ -583,14 +600,14 @@ export function AdminPanel({ data }: AdminPanelProps) {
               onClick={saveSettings}
               className="mt-6 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium hover:bg-violet-500 disabled:opacity-50"
             >
-              {pending ? 'Saving…' : 'Save settings'}
+              {pending ? t('admin.settings.saving') : t('admin.settings.save')}
             </button>
             <button
               type="button"
               onClick={() => setSettings(DEFAULT_SITE_SETTINGS)}
               className="ms-3 rounded-xl border border-white/15 px-5 py-2.5 text-sm hover:bg-white/5"
             >
-              Reset defaults
+              {t('admin.settings.reset')}
             </button>
           </AdminCard>
         ) : null}

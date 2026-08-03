@@ -240,4 +240,47 @@ export interface Dictionary {
     cancel: string;
     continue: string;
   };
+  admin: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    viewSite: string;
+    configured: string;
+    notConfigured: string;
+    signedInAs: string;
+    redeployHint: string;
+    tabs: Record<string, string>;
+    stats: Record<string, string>;
+    overview: Record<string, string>;
+    users: Record<string, string>;
+    planets: Record<string, string>;
+    presets: {
+      title: string;
+      desc: string;
+      add: string;
+      save: string;
+      reset: string;
+      saving: string;
+      kinds: Record<string, string>;
+      newOptionEn: string;
+      newOptionAr: string;
+    };
+    homepage: {
+      title: string;
+      desc: string;
+      siteName: string;
+      demoDomain: string;
+      heroColor: string;
+      english: string;
+      arabic: string;
+      examples: string;
+      save: string;
+      reset: string;
+      saving: string;
+      fields: Record<string, string>;
+    };
+    settings: Record<string, string>;
+    messages: Record<string, string>;
+    errors: Record<string, string>;
+  };
 }

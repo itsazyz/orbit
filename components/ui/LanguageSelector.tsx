@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface LanguageSelectorProps {
   className?: string;
-  variant?: 'pill' | 'minimal';
+  variant?: 'pill' | 'minimal' | 'toggle';
 }
 
 export function LanguageSelector({ className, variant = 'pill' }: LanguageSelectorProps) {
@@ -31,6 +31,24 @@ export function LanguageSelector({ className, variant = 'pill' }: LanguageSelect
       >
         <Globe className="h-4 w-4" />
         {lang === 'en' ? 'العربية' : 'English'}
+      </button>
+    );
+  }
+
+  if (variant === 'toggle') {
+    return (
+      <button
+        type="button"
+        onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-colors',
+          'text-star-dim hover:text-star',
+          className
+        )}
+        aria-label={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+      >
+        <Globe className="h-4 w-4 shrink-0" />
+        <span>{lang === 'en' ? 'العربية' : 'English'}</span>
       </button>
     );
   }

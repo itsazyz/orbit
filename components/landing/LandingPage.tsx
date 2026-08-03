@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
 import { useLanguage } from '@/lib/i18n/context';
@@ -41,7 +40,6 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
             {copy.siteName}
           </span>
           <div className="flex items-center gap-4">
-            <LanguageSelector />
             <Link href="/auth/sign-in">
               <Button variant="ghost" size="sm">{translate('nav.signIn')}</Button>
             </Link>

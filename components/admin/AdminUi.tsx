@@ -11,37 +11,39 @@ export type AdminTab =
   | 'homepage'
   | 'settings';
 
-const TABS: { id: AdminTab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'users', label: 'Users' },
-  { id: 'planets', label: 'Planets' },
-  { id: 'presets', label: 'Visual presets' },
-  { id: 'homepage', label: 'Homepage' },
-  { id: 'settings', label: 'Site settings' },
-];
-
 export function AdminTabs({
   active,
   onChange,
+  labels,
 }: {
   active: AdminTab;
   onChange: (tab: AdminTab) => void;
+  labels: Record<AdminTab, string>;
 }) {
+  const tabs: AdminTab[] = [
+    'overview',
+    'users',
+    'planets',
+    'presets',
+    'homepage',
+    'settings',
+  ];
+
   return (
     <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <button
-          key={tab.id}
+          key={tab}
           type="button"
-          onClick={() => onChange(tab.id)}
+          onClick={() => onChange(tab)}
           className={cn(
             'rounded-full px-4 py-2 text-sm transition-colors',
-            active === tab.id
+            active === tab
               ? 'bg-violet-600 text-white'
               : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
           )}
         >
-          {tab.label}
+          {labels[tab]}
         </button>
       ))}
     </div>
