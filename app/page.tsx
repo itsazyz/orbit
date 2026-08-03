@@ -17,5 +17,5 @@ export default async function HomePage() {
     return <MaintenancePage settings={settings} />;
   }
 
-  return <LandingPage homepage={homepage} siteSettings={settings} />;
+  return <LandingPage homepage={homepage} />;
 }

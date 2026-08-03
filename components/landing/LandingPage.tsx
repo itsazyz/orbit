@@ -10,15 +10,13 @@ import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
 import { useLanguage } from '@/lib/i18n/context';
 import { getHomepageStrings } from '@/lib/site-config/homepage-strings';
 import type { HomepageContentConfig } from '@/lib/site-config/types';
-import type { SiteSettingsConfig } from '@/lib/site-config/types';
 import { cn } from '@/lib/utils';
 
 interface LandingPageProps {
   homepage: HomepageContentConfig;
-  siteSettings: SiteSettingsConfig;
 }
 
-export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
+export function LandingPage({ homepage }: LandingPageProps) {
   const { t: translate, dir, lang } = useLanguage();
   const copy = getHomepageStrings(homepage, lang);
   const hero = homepage.heroPlanet;
