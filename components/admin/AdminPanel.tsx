@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import type { AdminStats } from '@/lib/actions/admin';
+import type { AdminStats } from '@/lib/admin/dashboard-data';
 import { saveVisualPresets } from '@/lib/actions/admin';
 import {
   STAR_VISUAL_OPTIONS,

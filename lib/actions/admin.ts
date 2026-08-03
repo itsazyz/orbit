@@ -4,18 +4,14 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { isAdminEmail } from '@/lib/admin';
+import type { AdminStats } from '@/lib/admin/dashboard-data';
 import {
   DEFAULT_VISUAL_PRESETS,
   STAR_VISUAL_OPTIONS,
   PLANET_SURFACE_OPTIONS,
 } from '@/lib/universe/visual-styles';
 
-export interface AdminStats {
-  totalUsers: number;
-  totalProfiles: number;
-  publishedProfiles: number;
-  totalStars: number;
-}
+export type { AdminStats };
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -31,43 +27,17 @@ async function requireAdmin() {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
-  await requireAdmin();
-
-  const admin = createServiceRoleClient();
-
-  const [usersRes, profilesRes, publishedRes, starsRes] = await Promise.all([
-    admin.rpc('get_registered_user_count'),
-    admin.from('profiles').select('id', { count: 'exact', head: true }),
-    admin
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true),
-    admin.from('stars').select('id', { count: 'exact', head: true }),
-  ]);
-
-  return {
-    totalUsers: Number(usersRes.data ?? 0),
-    totalProfiles: profilesRes.count ?? 0,
-    publishedProfiles: publishedRes.count ?? 0,
-    totalStars: starsRes.count ?? 0,
-  };
+  const user = await requireAdmin();
+  const { loadAdminDashboard } = await import('@/lib/admin/dashboard-data');
+  const { stats } = await loadAdminDashboard(user.email);
+  return stats;
 }
 
 export async function getVisualPresets() {
-  await requireAdmin();
-
-  const admin = createServiceRoleClient();
-  const { data } = await admin
-    .from('site_config')
-    .select('value')
-    .eq('key', 'visual_presets')
-    .maybeSingle();
-
-  if (data?.value && typeof data.value === 'object') {
-    return data.value as typeof DEFAULT_VISUAL_PRESETS;
-  }
-
-  return DEFAULT_VISUAL_PRESETS;
+  const user = await requireAdmin();
+  const { loadAdminDashboard } = await import('@/lib/admin/dashboard-data');
+  const { presets } = await loadAdminDashboard(user.email);
+  return { ...DEFAULT_VISUAL_PRESETS, ...presets };
 }
 
 export async function saveVisualPresets(presets: {

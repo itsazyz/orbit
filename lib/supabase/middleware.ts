@@ -4,12 +4,42 @@ import { getSupabaseEnv } from '@/lib/env';
 
 const PROTECTED_PREFIXES = ['/dashboard', '/settings', '/create', '/orbit-control'];
 
+/** App routes — lowercase only; redirect /ORBIT-CONTROL → /orbit-control */
+const CANONICAL_ROUTES = [
+  '/dashboard',
+  '/settings',
+  '/create',
+  '/orbit-control',
+  '/auth',
+] as const;
+
+function redirectToCanonicalPath(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
+  const lower = pathname.toLowerCase();
+
+  for (const route of CANONICAL_ROUTES) {
+    if (lower === route || lower.startsWith(`${route}/`)) {
+      if (pathname !== lower) {
+        const url = request.nextUrl.clone();
+        url.pathname = lower;
+        return NextResponse.redirect(url);
+      }
+      return null;
+    }
+  }
+
+  return null;
+}
+
 /**
  * Called from middleware.ts on every request.
  * - Refreshes the Supabase auth session cookie (required by @supabase/ssr).
  * - Redirects unauthenticated users away from protected routes.
  */
 export async function updateSession(request: NextRequest) {
+  const canonicalRedirect = redirectToCanonicalPath(request);
+  if (canonicalRedirect) return canonicalRedirect;
+
   const supabaseEnv = getSupabaseEnv();
 
   // Allow public pages to load even when Supabase env vars are missing

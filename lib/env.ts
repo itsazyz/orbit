@@ -17,3 +17,12 @@ export function getSupabaseEnv() {
 export function isSupabaseConfigured(): boolean {
   return getSupabaseEnv() !== null;
 }
+
+export function getServiceRoleKey(): string | null {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  return key || null;
+}
+
+export function isServiceRoleConfigured(): boolean {
+  return getSupabaseEnv() !== null && getServiceRoleKey() !== null;
+}

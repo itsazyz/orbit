@@ -38,6 +38,7 @@ create trigger trg_site_config_updated_at
 alter table public.site_config enable row level security;
 
 -- Anyone can read site config (public presets for create flow)
+drop policy if exists "site_config_select_all" on public.site_config;
 create policy "site_config_select_all"
   on public.site_config
   for select

@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
-import { getSupabaseEnv } from '@/lib/env';
+import { getSupabaseEnv, getServiceRoleKey } from '@/lib/env';
 
 function requireSupabaseEnv() {
   const env = getSupabaseEnv();
@@ -68,9 +68,18 @@ export function createServiceRoleClient() {
     throw new Error('createServiceRoleClient must never run in the browser.');
   }
 
+  const env = requireSupabaseEnv();
+  const serviceRoleKey = getServiceRoleKey();
+
+  if (!serviceRoleKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY is not configured. Add it in Vercel → Settings → Environment Variables (required for admin stats and site config).'
+    );
+  }
+
   return createServerClient<Database>(
-    requireSupabaseEnv().url,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    env.url,
+    serviceRoleKey,
     {
       cookies: {
         get() {

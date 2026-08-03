@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -11,31 +11,35 @@ import { useLanguage } from '@/lib/i18n/context';
 export default function VerifiedPage() {
   const { t } = useLanguage();
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     async function checkSession() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
+        if (!user) {
+          router.replace('/auth/sign-in?redirectTo=/create');
+          return;
+        }
+
+        const path = await getPostAuthPath(supabase);
+        if (path === '/dashboard') {
+          router.replace('/dashboard');
+          return;
+        }
+
+        setChecking(false);
+      } catch {
         router.replace('/auth/sign-in?redirectTo=/create');
-        return;
       }
-
-      const path = await getPostAuthPath(supabase);
-      if (path === '/dashboard') {
-        router.replace('/dashboard');
-        return;
-      }
-
-      setChecking(false);
     }
 
     checkSession();
-  }, [router, supabase]);
+  }, [router]);
 
   if (checking) {
     return (
