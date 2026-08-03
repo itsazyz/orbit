@@ -50,15 +50,20 @@ export default async function OrbitControlPage() {
 
   try {
     const data = await loadAdminDashboard(userEmail);
+    // Ensure props crossing the server→client boundary are plain JSON
+    const safeData = JSON.parse(JSON.stringify(data)) as Awaited<
+      ReturnType<typeof loadAdminDashboard>
+    >;
 
     return (
       <main className="min-h-svh bg-gradient-to-b from-[#0a0d16] to-[#05060a]">
-        <AdminPanel data={data} />
+        <AdminPanel data={safeData} />
       </main>
     );
   } catch (error) {
+    console.error('[orbit-control] dashboard load failed:', error);
     const message =
-      error instanceof Error ? error.message : undefined;
+      error instanceof Error ? error.message : 'Unknown admin dashboard error';
     return <AdminErrorScreenClient variant="setup" detail={message} />;
   }
 }

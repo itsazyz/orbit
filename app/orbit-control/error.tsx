@@ -26,6 +26,11 @@ export default function OrbitControlError({
       <div className="max-w-lg">
         <h1 className="text-2xl font-semibold">{t('admin.errors.setupTitle')}</h1>
         <p className="mt-3 text-slate-400">{t('admin.errors.setupMessage')}</p>
+        {error.message ? (
+          <p className="mt-3 break-words rounded-lg border border-white/10 bg-black/30 p-3 text-start text-xs text-slate-400">
+            {error.message}
+          </p>
+        ) : null}
         {error.digest ? (
           <p className="mt-2 text-xs text-slate-600">Digest: {error.digest}</p>
         ) : null}

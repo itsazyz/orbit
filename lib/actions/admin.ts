@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { createServiceRoleClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/service';
 import { isAdminEmail } from '@/lib/admin';
 import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import {

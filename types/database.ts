@@ -128,23 +128,27 @@ export interface Database {
         Row: ProfileRow;
         Insert: Partial<ProfileRow> & Pick<ProfileRow, 'id' | 'username' | 'display_name'>;
         Update: Partial<ProfileRow>;
+        Relationships: [];
       };
       universe_objects: {
         Row: UniverseObjectRow;
         Insert: Partial<UniverseObjectRow> &
           Pick<UniverseObjectRow, 'profile_id' | 'name' | 'category'>;
         Update: Partial<UniverseObjectRow>;
+        Relationships: [];
       };
       reserved_usernames: {
         Row: { username: string };
         Insert: { username: string };
         Update: { username: string };
+        Relationships: [];
       };
       stars: {
         Row: StarRow;
         Insert: Partial<StarRow> &
           Pick<StarRow, 'profile_id' | 'title'>;
         Update: Partial<StarRow>;
+        Relationships: [];
       };
       site_config: {
         Row: { key: string; value: Record<string, unknown>; updated_at: string };
@@ -158,12 +162,31 @@ export interface Database {
           value: Record<string, unknown>;
           updated_at: string;
         }>;
+        Relationships: [];
       };
     };
     Views: {
       public_universes: {
         Row: PublicUniverseRow;
+        Relationships: [];
+      };
+      admin_stats: {
+        Row: {
+          total_users: number;
+          total_profiles: number;
+          published_profiles: number;
+          total_stars: number;
+        };
+        Relationships: [];
       };
     };
+    Functions: {
+      get_registered_user_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+    };
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -1,8 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
-import { getSupabaseEnv, getServiceRoleKey } from '@/lib/env';
+import { getSupabaseEnv } from '@/lib/env';
+
+export { createServiceRoleClient } from '@/lib/supabase/service';
 
 function requireSupabaseEnv() {
   const env = getSupabaseEnv();
@@ -55,35 +56,3 @@ export async function createClient() {
   );
 }
 
-/**
- * Privileged client using the service role key. This BYPASSES Row Level
- * Security entirely. Only ever import this inside server-only code paths
- * that need to act outside a specific user's permissions — e.g. permanently
- * deleting a user's auth.users row on account deletion.
- *
- * Never import this file from a Client Component. Never send its result
- * to the browser.
- */
-export function createServiceRoleClient() {
-  if (typeof window !== 'undefined') {
-    throw new Error('createServiceRoleClient must never run in the browser.');
-  }
-
-  const env = requireSupabaseEnv();
-  const serviceRoleKey = getServiceRoleKey();
-
-  if (!serviceRoleKey) {
-    throw new Error(
-      'SUPABASE_SERVICE_ROLE_KEY is not configured. Add it in Vercel → Settings → Environment Variables (required for admin stats and site config).'
-    );
-  }
-
-  // Use the plain JS client (not SSR cookie client) so admin writes
-  // reliably authenticate with the service role key.
-  return createSupabaseClient<Database>(env.url, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}

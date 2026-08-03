@@ -138,7 +138,7 @@ export async function signOut() {
 
 export async function deleteAccount() {
   const supabase = await createClient();
-  const { createServiceRoleClient } = await import('@/lib/supabase/server');
+  const { createServiceRoleClient } = await import('@/lib/supabase/service');
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
