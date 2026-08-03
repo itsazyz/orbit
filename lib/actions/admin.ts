@@ -4,11 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service';
 import { isAdminEmail } from '@/lib/admin';
+import { loadAdminDashboard } from '@/lib/admin/dashboard-data';
+import type { AdminDashboardPayload } from '@/lib/admin/dashboard-data';
 import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import {
-  DEFAULT_HOMEPAGE_CONTENT,
-  DEFAULT_SITE_SETTINGS,
-  DEFAULT_VISUAL_PRESETS_CONFIG,
   normalizeHomepageContent,
   normalizeSiteSettings,
   normalizeVisualPresets,
@@ -20,6 +19,9 @@ import type {
 } from '@/lib/site-config/types';
 
 type ActionResult = { ok: true } | { ok: false; error: string };
+type DashboardResult =
+  | { ok: true; data: AdminDashboardPayload }
+  | { ok: false; error: string };
 
 async function requireAdmin(): Promise<
   { ok: true; email: string } | { ok: false; error: string }
@@ -243,4 +245,21 @@ export async function checkIsAdmin(): Promise<boolean> {
   return gate.ok;
 }
 
-export { DEFAULT_VISUAL_PRESETS_CONFIG, DEFAULT_HOMEPAGE_CONTENT, DEFAULT_SITE_SETTINGS };
+export async function getAdminDashboardAction(): Promise<DashboardResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  try {
+    const data = await loadAdminDashboard(gate.email);
+    const safe = JSON.parse(JSON.stringify(data)) as AdminDashboardPayload;
+    return { ok: true, data: safe };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to load admin dashboard',
+    };
+  }
+}

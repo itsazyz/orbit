@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail, getAdminEmail } from '@/lib/admin';
-import { loadAdminDashboard } from '@/lib/admin/dashboard-data';
-import { AdminPanel } from '@/components/admin/AdminPanel';
+import { AdminGate } from '@/components/admin/AdminGate';
 import {
   AdminAccessDeniedClient,
   AdminErrorScreenClient,
@@ -11,6 +10,10 @@ import { isServiceRoleConfigured, isSupabaseConfigured } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Auth gate only — dashboard data loads client-side via AdminGate
+ * so AdminPanel never participates in the Server Components render.
+ */
 export default async function OrbitControlPage() {
   if (!isSupabaseConfigured()) {
     return <AdminErrorScreenClient variant="supabase" />;
@@ -27,7 +30,6 @@ export default async function OrbitControlPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     userEmail = user?.email ?? null;
   } catch (error) {
     const message = error instanceof Error ? error.message : undefined;
@@ -47,21 +49,5 @@ export default async function OrbitControlPage() {
     );
   }
 
-  try {
-    const data = await loadAdminDashboard(userEmail);
-    const safeData = JSON.parse(JSON.stringify(data)) as Awaited<
-      ReturnType<typeof loadAdminDashboard>
-    >;
-
-    return (
-      <main className="min-h-svh bg-gradient-to-b from-[#0a0d16] to-[#05060a]">
-        <AdminPanel data={safeData} />
-      </main>
-    );
-  } catch (error) {
-    console.error('[orbit-control] dashboard load failed:', error);
-    const message =
-      error instanceof Error ? error.message : 'Unknown admin dashboard error';
-    return <AdminErrorScreenClient variant="setup" detail={message} />;
-  }
+  return <AdminGate />;
 }
