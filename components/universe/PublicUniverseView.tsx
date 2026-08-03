@@ -264,51 +264,53 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         </>
       ) : null}
 
-      <div className="universe-stage">
-        <div className="orbit orbit-one" />
-        <div className="orbit orbit-two" />
-        <div className="orbit orbit-three" />
-        <div className="orbit-glow" style={{ boxShadow: `0 0 120px ${planetColor}33` }} />
+      <div className="universe-center">
+        <div className="universe-stage">
+          <div className="orbit orbit-one" />
+          <div className="orbit orbit-two" />
+          <div className="orbit orbit-three" />
+          <div className="orbit-glow" style={{ boxShadow: `0 0 120px ${planetColor}33` }} />
 
-        {orbitingStars.map((star) => (
-          <button
-            key={star.id}
-            type="button"
-            className="user-star"
-            style={{
-              left: `calc(50% + ${star.x}px)`,
-              top: `calc(50% + ${star.y}px)`,
-            }}
-            onClick={() => setSelectedStar(star)}
-            aria-label={star.title}
-          >
-            <span className="star-pulse" style={{ background: star.star_color || planetColor }} />
-            <StarShape
-              type={star.visual_type ?? 'sparkle'}
-              size={star.size || 12}
-              color={star.star_color || '#ffffff'}
-              icon={star.icon}
+          {orbitingStars.map((star) => (
+            <button
+              key={star.id}
+              type="button"
+              className="user-star"
+              style={{
+                left: `calc(50% + ${star.x}px)`,
+                top: `calc(50% + ${star.y}px)`,
+              }}
+              onClick={() => setSelectedStar(star)}
+              aria-label={star.title}
+            >
+              <span className="star-pulse" style={{ background: star.star_color || planetColor }} />
+              <StarShape
+                type={star.visual_type ?? 'sparkle'}
+                size={star.size || 12}
+                color={star.star_color || '#ffffff'}
+                icon={star.icon}
+              />
+              <span className="star-label">{star.title}</span>
+            </button>
+          ))}
+
+          <div className={`planet-wrap ${reducedMotion ? '' : 'planet-spin'}`}>
+            <PlanetRenderer
+              color={planetColor}
+              surfaceStyle={profile.planet_surface_style ?? 'smooth'}
+              atmosphere={profile.planet_atmosphere ?? 'thin'}
+              glow={profile.planet_glow ?? 4}
+              hasRing={profile.planet_has_ring ?? false}
+              mood={mood}
+              spaceBackground={spaceBg}
+              size={190}
+              animate
+              spin={!reducedMotion}
             />
-            <span className="star-label">{star.title}</span>
-          </button>
-        ))}
-
-        <div className={`planet-wrap ${reducedMotion ? '' : 'planet-spin'}`}>
-          <PlanetRenderer
-            color={planetColor}
-            surfaceStyle={profile.planet_surface_style ?? 'smooth'}
-            atmosphere={profile.planet_atmosphere ?? 'thin'}
-            glow={profile.planet_glow ?? 4}
-            hasRing={profile.planet_has_ring ?? false}
-            mood={mood}
-            spaceBackground={spaceBg}
-            size={190}
-            animate
-            spin={!reducedMotion}
-          />
+          </div>
         </div>
 
-        <div className="identity motion-safe:animate-fade-rise">
+        <div className="identity">
           <h1>{profile.display_name || profile.username}</h1>
           <p className="username">@{profile.username}</p>
           {profile.bio ? <p className="bio">{profile.bio}</p> : null}
@@ -374,7 +376,19 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           overflow: hidden;
           color: white;
           isolation: isolate;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           animation: universeEnter 1.1s ease-out both;
+        }
+
+        .universe-center {
+          position: relative;
+          z-index: 2;
+          width: min(100vw, 1100px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         @keyframes universeEnter {
@@ -418,11 +432,9 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
 
         .universe-stage {
           position: relative;
-          width: min(100vw, 1100px);
-          height: min(100svh, 900px);
-          min-height: 600px;
-          margin: auto;
-          z-index: 2;
+          width: 100%;
+          height: min(72svh, 720px);
+          min-height: 480px;
         }
 
         .orbit {
@@ -574,13 +586,12 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         }
 
         .identity {
-          position: absolute;
-          top: calc(50% + 125px);
-          left: 50%;
-          transform: translateX(-50%);
-          width: min(90%, 420px);
-          text-align: center;
+          position: relative;
           z-index: 10;
+          width: min(90%, 420px);
+          margin: -72px auto 0;
+          padding: 0 16px 24px;
+          text-align: center;
           pointer-events: none;
         }
 
@@ -760,7 +771,7 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
             height: 500px;
           }
           .identity {
-            top: calc(50% + 100px);
+            margin-top: -48px;
           }
           .star-label {
             display: none;
