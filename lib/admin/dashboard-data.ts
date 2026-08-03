@@ -51,6 +51,20 @@ export async function loadAdminDashboard(
 ): Promise<AdminDashboardPayload> {
   assertAdminEmail(userEmail);
 
+  const empty: AdminDashboardPayload = {
+    stats: {
+      totalUsers: 0,
+      totalProfiles: 0,
+      publishedProfiles: 0,
+      totalStars: 0,
+    },
+    presets: DEFAULT_VISUAL_PRESETS_CONFIG,
+    homepage: DEFAULT_HOMEPAGE_CONTENT,
+    siteSettings: DEFAULT_SITE_SETTINGS,
+    users: [],
+    planets: [],
+  };
+
   let admin;
   try {
     admin = createServiceRoleClient();
@@ -84,113 +98,131 @@ export async function loadAdminDashboard(
     console.error('[admin] settings load failed:', error);
   }
 
-  const [
-    usersRes,
-    profilesRes,
-    publishedRes,
-    starsRes,
-    profilesListRes,
-  ] = await Promise.all([
-    admin.rpc('get_registered_user_count').then(
-      (result) => result,
-      (error) => {
-        console.error('[admin] user count rpc failed:', error);
-        return { data: null, error };
-      }
-    ),
-    admin.from('profiles').select('id', { count: 'exact', head: true }),
-    admin
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_published', true),
-    admin.from('stars').select('id', { count: 'exact', head: true }),
-    admin
-      .from('profiles')
-      .select(
-        'id, username, display_name, is_published, visibility, planet_color, music_enabled, created_at, updated_at'
-      )
-      .order('created_at', { ascending: false })
-      .limit(100),
-  ]);
-
-  if (profilesListRes.error) {
-    console.error('[admin] profiles list failed:', profilesListRes.error.message);
-  }
-
-  let emailById = new Map<string, string>();
   try {
-    const authUsersRes = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    if (authUsersRes.error) {
-      console.error('[admin] listUsers failed:', authUsersRes.error.message);
-    } else {
-      emailById = new Map(
-        (authUsersRes.data.users ?? []).map((user) => [
-          user.id,
-          toPlainString(user.email, '—'),
-        ])
+    const [
+      usersRes,
+      profilesRes,
+      publishedRes,
+      starsRes,
+      profilesListRes,
+    ] = await Promise.all([
+      admin.rpc('get_registered_user_count').then(
+        (result) => result,
+        (error) => {
+          console.error('[admin] user count rpc failed:', error);
+          return { data: null, error };
+        }
+      ),
+      admin.from('profiles').select('id', { count: 'exact', head: true }),
+      admin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_published', true),
+      admin.from('stars').select('id', { count: 'exact', head: true }),
+      admin
+        .from('profiles')
+        .select(
+          'id, username, display_name, is_published, visibility, planet_color, music_enabled, created_at, updated_at'
+        )
+        .order('created_at', { ascending: false })
+        .limit(100),
+    ]);
+
+    if (profilesListRes.error) {
+      console.error(
+        '[admin] profiles list failed:',
+        profilesListRes.error.message
       );
     }
-  } catch (error) {
-    console.error('[admin] listUsers threw:', error);
-  }
 
-  const profileRows = profilesListRes.data ?? [];
-  const profileIds = profileRows.map((row) => row.id);
+    let emailById = new Map<string, string>();
+    try {
+      const authUsersRes = await admin.auth.admin.listUsers({
+        page: 1,
+        perPage: 200,
+      });
+      if (authUsersRes.error) {
+        console.error('[admin] listUsers failed:', authUsersRes.error.message);
+      } else {
+        emailById = new Map(
+          (authUsersRes.data.users ?? []).map((user) => [
+            user.id,
+            toPlainString(user.email, '—'),
+          ])
+        );
+      }
+    } catch (error) {
+      console.error('[admin] listUsers threw:', error);
+    }
 
-  const starCounts = new Map<string, number>();
-  if (profileIds.length > 0) {
-    const { data: starRows, error: starError } = await admin
-      .from('stars')
-      .select('profile_id')
-      .in('profile_id', profileIds);
+    const profileRows = profilesListRes.data ?? [];
+    const profileIds = profileRows.map((row) => row.id);
 
-    if (starError) {
-      console.error('[admin] star counts failed:', starError.message);
-    } else {
-      for (const row of starRows ?? []) {
-        starCounts.set(row.profile_id, (starCounts.get(row.profile_id) ?? 0) + 1);
+    const starCounts = new Map<string, number>();
+    if (profileIds.length > 0) {
+      const { data: starRows, error: starError } = await admin
+        .from('stars')
+        .select('profile_id')
+        .in('profile_id', profileIds);
+
+      if (starError) {
+        console.error('[admin] star counts failed:', starError.message);
+      } else {
+        for (const row of starRows ?? []) {
+          starCounts.set(
+            row.profile_id,
+            (starCounts.get(row.profile_id) ?? 0) + 1
+          );
+        }
       }
     }
+
+    const users: AdminUserRow[] = profileRows.map((profile) => ({
+      id: toPlainString(profile.id),
+      email: emailById.get(profile.id) ?? '—',
+      username: toPlainString(profile.username),
+      displayName: toPlainString(profile.display_name),
+      isPublished: Boolean(profile.is_published),
+      visibility: profile.visibility === 'private' ? 'private' : 'public',
+      starCount: starCounts.get(profile.id) ?? 0,
+      createdAt: toPlainString(profile.created_at),
+    }));
+
+    const planets: AdminPlanetRow[] = profileRows.map((profile) => ({
+      id: toPlainString(profile.id),
+      username: toPlainString(profile.username),
+      displayName: toPlainString(profile.display_name),
+      isPublished: Boolean(profile.is_published),
+      visibility: profile.visibility === 'private' ? 'private' : 'public',
+      planetColor: toPlainString(profile.planet_color, '#7c8cff'),
+      starCount: starCounts.get(profile.id) ?? 0,
+      musicEnabled: Boolean(profile.music_enabled),
+      createdAt: toPlainString(profile.created_at),
+      updatedAt: toPlainString(profile.updated_at),
+    }));
+
+    return {
+      stats: {
+        totalUsers: usersRes.error
+          ? profilesRes.count ?? 0
+          : Number(usersRes.data ?? 0),
+        totalProfiles: profilesRes.error ? 0 : profilesRes.count ?? 0,
+        publishedProfiles: publishedRes.error ? 0 : publishedRes.count ?? 0,
+        totalStars: starsRes.error ? 0 : starsRes.count ?? 0,
+      },
+      presets,
+      homepage,
+      siteSettings,
+      users,
+      planets,
+    };
+  } catch (error) {
+    console.error('[admin] dashboard query failed, using partial data:', error);
+    return {
+      ...empty,
+      presets,
+      homepage,
+      siteSettings,
+    };
   }
-
-  const users: AdminUserRow[] = profileRows.map((profile) => ({
-    id: toPlainString(profile.id),
-    email: emailById.get(profile.id) ?? '—',
-    username: toPlainString(profile.username),
-    displayName: toPlainString(profile.display_name),
-    isPublished: Boolean(profile.is_published),
-    visibility: profile.visibility === 'private' ? 'private' : 'public',
-    starCount: starCounts.get(profile.id) ?? 0,
-    createdAt: toPlainString(profile.created_at),
-  }));
-
-  const planets: AdminPlanetRow[] = profileRows.map((profile) => ({
-    id: toPlainString(profile.id),
-    username: toPlainString(profile.username),
-    displayName: toPlainString(profile.display_name),
-    isPublished: Boolean(profile.is_published),
-    visibility: profile.visibility === 'private' ? 'private' : 'public',
-    planetColor: toPlainString(profile.planet_color, '#7c8cff'),
-    starCount: starCounts.get(profile.id) ?? 0,
-    musicEnabled: Boolean(profile.music_enabled),
-    createdAt: toPlainString(profile.created_at),
-    updatedAt: toPlainString(profile.updated_at),
-  }));
-
-  // Fully JSON-serializable payload for the client AdminPanel
-  return {
-    stats: {
-      totalUsers: usersRes.error
-        ? profilesRes.count ?? 0
-        : Number(usersRes.data ?? 0),
-      totalProfiles: profilesRes.error ? 0 : profilesRes.count ?? 0,
-      publishedProfiles: publishedRes.error ? 0 : publishedRes.count ?? 0,
-      totalStars: starsRes.error ? 0 : starsRes.count ?? 0,
-    },
-    presets,
-    homepage,
-    siteSettings,
-    users,
-    planets,
-  };
 }

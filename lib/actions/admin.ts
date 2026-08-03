@@ -151,8 +151,8 @@ export async function saveSiteSettings(
   const result = await upsertSiteConfig(SITE_CONFIG_KEYS.siteSettings, value);
   if (!result.ok) return result;
 
-  // Refresh public homepage only — do NOT remount /orbit-control
-  revalidatePath('/');
+  // Avoid revalidatePath here — it can crash the admin RSC tree in production.
+  // Homepage will pick up new settings on the next normal request.
   return { ok: true };
 }
 
