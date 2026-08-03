@@ -8,7 +8,7 @@ import { LanguageSelector } from '@/components/ui/LanguageSelector';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
 import { useLanguage } from '@/lib/i18n/context';
-import { getHomepageStrings } from '@/lib/site-config/load';
+import { getHomepageStrings } from '@/lib/site-config/homepage-strings';
 import type { HomepageContentConfig } from '@/lib/site-config/types';
 import type { SiteSettingsConfig } from '@/lib/site-config/types';
 import { cn } from '@/lib/utils';

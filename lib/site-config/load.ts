@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import type { Language } from '@/types/database';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
@@ -15,7 +14,6 @@ import {
 } from './defaults';
 import type {
   HomepageContentConfig,
-  HomepageLangContent,
   SiteSettingsConfig,
   VisualPresetsConfig,
 } from './types';
@@ -90,17 +88,4 @@ export async function loadSiteSettingsAdmin(): Promise<SiteSettingsConfig> {
   const admin = createServiceRoleClient();
   const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.siteSettings);
   return normalizeSiteSettings(value);
-}
-
-export function getHomepageStrings(
-  content: HomepageContentConfig,
-  lang: Language
-): HomepageLangContent & { examples: string[]; siteName: string; demoDomain: string } {
-  const langContent = lang === 'ar' ? content.ar : content.en;
-  return {
-    ...langContent,
-    examples: lang === 'ar' ? content.examples.ar : content.examples.en,
-    siteName: content.siteName,
-    demoDomain: content.demoDomain,
-  };
 }
