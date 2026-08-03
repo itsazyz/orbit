@@ -5,11 +5,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { VisualPresetOption } from "@/lib/universe/visual-styles";
-import type { PlanetSurfaceStyle } from "@/types/database";
+import { PLANET_MOOD_OPTIONS } from "@/lib/universe/visual-styles";
+import {
+  ATMOSPHERE_OPTIONS,
+  SPACE_BACKGROUND_OPTIONS,
+  UNIVERSE_THEMES,
+} from "@/lib/universe/themes";
+import type {
+  PlanetAtmosphere,
+  PlanetSurfaceStyle,
+  SpaceBackground,
+  UniverseMood,
+} from "@/types/database";
 import { loadPlanetForEditor } from "@/lib/profile/client";
 import { publishUserPlanet } from "@/lib/profile/publish-planet";
 import { MusicPicker } from "@/components/create/MusicPicker";
+import { CreateLivePreview } from "@/components/create/CreateLivePreview";
+import { PlanetRenderer } from "@/components/planet/PlanetRenderer";
 import { useLanguage } from "@/lib/i18n/context";
+import { interpolate } from "@/lib/i18n";
 import "./create.css";
 
 const USERNAME_RE = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -51,6 +65,12 @@ export function CreatePageClient({
   const [bio, setBio] = useState("");
   const [planetColor, setPlanetColor] = useState("#7C3AED");
   const [planetSurface, setPlanetSurface] = useState<PlanetSurfaceStyle>("smooth");
+  const [atmosphere, setAtmosphere] = useState<PlanetAtmosphere>("thin");
+  const [glow, setGlow] = useState(3);
+  const [hasRing, setHasRing] = useState(false);
+  const [mood, setMood] = useState<UniverseMood>("calm");
+  const [spaceBackground, setSpaceBackground] =
+    useState<SpaceBackground>("deep_space");
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [musicUrl, setMusicUrl] = useState("");
 
@@ -88,6 +108,15 @@ export function CreatePageClient({
           setBio(existing.profile.bio);
           setPlanetColor(existing.profile.planet_color);
           setPlanetSurface(existing.profile.planet_surface_style as PlanetSurfaceStyle);
+          setAtmosphere(
+            (existing.profile.planet_atmosphere as PlanetAtmosphere) || "thin"
+          );
+          setGlow(existing.profile.planet_glow ?? 3);
+          setHasRing(!!existing.profile.planet_has_ring);
+          setMood((existing.profile.universe_mood as UniverseMood) || "calm");
+          setSpaceBackground(
+            (existing.profile.space_background as SpaceBackground) || "deep_space"
+          );
           setMusicEnabled(existing.profile.music_enabled);
           setMusicUrl(existing.profile.music_url);
           setStars(
@@ -245,6 +274,11 @@ export function CreatePageClient({
           bio: trimmedBio,
           planetColor,
           planetSurface,
+          atmosphere,
+          glow,
+          hasRing,
+          mood,
+          spaceBackground,
           musicEnabled,
           musicUrl,
         },
@@ -373,6 +407,112 @@ export function CreatePageClient({
                     style={{
                       ...styles.chip,
                       ...(planetSurface === option.id ? styles.chipActive : {}),
+                    }}
+                  >
+                    {presetLabel(option)}
+                  </button>
+                ))}
+              </div>
+
+              <label style={styles.label}>{t("create.themesLabel")}</label>
+              <p style={styles.sectionSubtitle}>{t("create.themesHint")}</p>
+              <div style={styles.chipRow} className="create-chip-row">
+                {UNIVERSE_THEMES.map((theme) => (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => {
+                      setPlanetColor(theme.planetColor);
+                      setPlanetSurface(theme.planetSurface);
+                      setAtmosphere(theme.atmosphere);
+                      setGlow(theme.glow);
+                      setHasRing(theme.hasRing);
+                      setMood(theme.mood);
+                      setSpaceBackground(theme.spaceBackground);
+                    }}
+                    style={{
+                      ...styles.chip,
+                      borderColor: theme.planetColor + "88",
+                    }}
+                  >
+                    {lang === "ar" ? theme.labelAr : theme.labelEn}
+                  </button>
+                ))}
+              </div>
+
+              <label style={styles.label}>{t("create.atmosphereLabel")}</label>
+              <div style={styles.chipRow} className="create-chip-row">
+                {ATMOSPHERE_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setAtmosphere(option.id as PlanetAtmosphere)}
+                    style={{
+                      ...styles.chip,
+                      ...(atmosphere === option.id ? styles.chipActive : {}),
+                    }}
+                  >
+                    {presetLabel(option)}
+                  </button>
+                ))}
+              </div>
+
+              <label style={styles.label}>
+                {t("create.glowLabel")} — {glow}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={5}
+                step={1}
+                value={glow}
+                onChange={(e) => setGlow(Number(e.target.value))}
+                className="create-glow-range"
+                style={{ width: "100%", accentColor: planetColor }}
+              />
+
+              <label style={styles.label}>{t("create.ringLabel")}</label>
+              <button
+                type="button"
+                onClick={() => setHasRing((v) => !v)}
+                style={{
+                  ...styles.chip,
+                  ...(hasRing ? styles.chipActive : {}),
+                  alignSelf: "flex-start",
+                }}
+              >
+                {hasRing ? t("create.ringOn") : t("create.ringOff")}
+              </button>
+
+              <label style={styles.label}>{t("create.moodLabel")}</label>
+              <div style={styles.chipRow} className="create-chip-row">
+                {PLANET_MOOD_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setMood(option.id as UniverseMood)}
+                    style={{
+                      ...styles.chip,
+                      ...(mood === option.id ? styles.chipActive : {}),
+                    }}
+                  >
+                    {presetLabel(option)}
+                  </button>
+                ))}
+              </div>
+
+              <label style={styles.label}>{t("create.backgroundLabel")}</label>
+              <div style={styles.chipRow} className="create-chip-row">
+                {SPACE_BACKGROUND_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      setSpaceBackground(option.id as SpaceBackground)
+                    }
+                    style={{
+                      ...styles.chip,
+                      ...(spaceBackground === option.id ? styles.chipActive : {}),
                     }}
                   >
                     {presetLabel(option)}
@@ -590,140 +730,31 @@ export function CreatePageClient({
 
             {/* PREVIEW */}
             <section style={styles.preview} className="create-preview">
-              <div style={styles.previewLabel}>{t("create.livePreview")}</div>
-
-              <div style={styles.space} className="create-space">
-                {/* Decorative stars */}
-                <span
-                  style={{
-                    ...styles.previewStar,
-                    top: "12%",
-                    left: "15%",
-                  }}
-                >
-                  ✦
-                </span>
-
-                <span
-                  style={{
-                    ...styles.previewStarSmall,
-                    top: "25%",
-                    right: "15%",
-                  }}
-                >
-                  ·
-                </span>
-
-                <span
-                  style={{
-                    ...styles.previewStarSmall,
-                    bottom: "20%",
-                    left: "18%",
-                  }}
-                >
-                  ·
-                </span>
-
-                <span
-                  style={{
-                    ...styles.previewStar,
-                    bottom: "15%",
-                    right: "20%",
-                  }}
-                >
-                  ✦
-                </span>
-
-                {/* Planet */}
-                <div
-                  className="create-planet"
-                  style={{
-                    ...styles.planet,
-                    background: `radial-gradient(
-                      circle at 30% 25%,
-                      #ffffff,
-                      ${planetColor} 40%,
-                      #13072d 100%
-                    )`,
-                    boxShadow: `0 0 100px ${planetColor}88`,
-                  }}
-                />
-
-                {/* User stars preview */}
-                {stars.map((star, index) => {
-                  const positions = [
-                    {
-                      top: "17%",
-                      left: "50%",
-                    },
-                    {
-                      top: "35%",
-                      right: "10%",
-                    },
-                    {
-                      bottom: "25%",
-                      right: "14%",
-                    },
-                    {
-                      bottom: "12%",
-                      left: "50%",
-                    },
-                    {
-                      bottom: "27%",
-                      left: "10%",
-                    },
-                    {
-                      top: "35%",
-                      left: "8%",
-                    },
-                  ];
-
-                  const position =
-                    positions[index % positions.length];
-
-                  return (
-                    <div
-                      key={star.id}
-                      style={{
-                        ...styles.userStar,
-                        ...position,
-                      }}
-                      title={star.title}
-                    >
-                      <span>{star.icon}</span>
-
-                      <small className="create-user-star-label">{star.title}</small>
-                    </div>
-                  );
-                })}
-
-                <div style={styles.previewName} className="create-preview-name">
-                  <h2>
-                    {name || t("create.previewPlanet")}
-                  </h2>
-
-                  <p>
-                    {bio || t("create.previewBio")}
-                  </p>
-
-                  {username && (
-                    <span style={styles.previewUsername}>
-                      orbit/{username}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <p style={styles.previewHint} className="create-preview-hint">
-                {stars.length === 0
-                  ? t("create.previewEmptyStars")
-                  : t(
-                      stars.length === 1
-                        ? "create.previewStarsCount"
-                        : "create.previewStarsCountPlural",
-                      { count: stars.length }
-                    )}
-              </p>
+              <div className="create-preview-badge">{t("create.livePreview")}</div>
+              <CreateLivePreview
+                name={name}
+                username={username}
+                bio={bio}
+                planetColor={planetColor}
+                planetSurface={planetSurface}
+                atmosphere={atmosphere}
+                glow={glow}
+                hasRing={hasRing}
+                mood={mood}
+                spaceBackground={spaceBackground}
+                stars={stars}
+                emptyName={t("create.previewPlanet")}
+                emptyBio={t("create.previewBio")}
+                emptyStarsHint={t("create.previewEmptyStars")}
+                starsCountLabel={interpolate(
+                  t(
+                    stars.length === 1
+                      ? "create.previewStarsCount"
+                      : "create.previewStarsCountPlural"
+                  ),
+                  { count: String(stars.length) }
+                )}
+              />
             </section>
           </div>
 
@@ -750,7 +781,20 @@ export function CreatePageClient({
   return (
     <main style={styles.landing} className="create-landing">
       <div style={styles.landingContent}>
-        <div style={styles.heroPlanet} />
+        <div className="create-landing-planet">
+          <PlanetRenderer
+            color="#7c8cff"
+            surfaceStyle="crystalline"
+            atmosphere="thin"
+            glow={4}
+            hasRing
+            mood="futuristic"
+            spaceBackground="deep_space"
+            size={140}
+            animate
+            spin
+          />
+        </div>
 
         <p style={styles.eyebrow}>
           {t("create.landingEyebrow")}

@@ -8,6 +8,8 @@ import {
   hasPublishedPlanet,
   type UserPlanetSummary,
 } from "@/lib/profile/client";
+import { PlanetRenderer } from "@/components/planet/PlanetRenderer";
+import type { PlanetSurfaceStyle } from "@/types/database";
 
 export default function DashboardPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -56,9 +58,27 @@ export default function DashboardPage() {
 
         {hasPlanet && planet ? (
           <section style={styles.panel}>
-            <h2 style={styles.panelTitle}>{planet.display_name}</h2>
-            <p style={styles.username}>orbit/{planet.username}</p>
-            {planet.bio ? <p style={styles.bio}>{planet.bio}</p> : null}
+            <div style={styles.planetRow}>
+              <PlanetRenderer
+                color={planet.planet_color || "#7c8cff"}
+                surfaceStyle={
+                  (planet.planet_surface_style as PlanetSurfaceStyle) || "smooth"
+                }
+                atmosphere="thin"
+                glow={4}
+                hasRing={false}
+                mood="calm"
+                spaceBackground="deep_space"
+                size={96}
+                animate
+                spin
+              />
+              <div>
+                <h2 style={styles.panelTitle}>{planet.display_name}</h2>
+                <p style={styles.username}>orbit/{planet.username}</p>
+                {planet.bio ? <p style={styles.bio}>{planet.bio}</p> : null}
+              </div>
+            </div>
 
             <div style={styles.statsRow}>
               <div style={styles.stat}>
@@ -141,6 +161,12 @@ const styles: Record<string, CSSProperties> = {
   },
   panelTitle: { marginTop: 0, fontSize: 28 },
   panelText: { color: "#b7bdd1", fontSize: 17, lineHeight: 1.7 },
+  planetRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 24,
+    flexWrap: "wrap",
+  },
   username: { color: "#a78bfa", margin: "8px 0 0" },
   bio: { color: "#b7bdd1", lineHeight: 1.6, maxWidth: 480 },
   statsRow: { display: "flex", gap: 24, marginTop: 28, flexWrap: "wrap" },

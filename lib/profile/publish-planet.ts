@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
-import type { PlanetSurfaceStyle } from '@/types/database';
+import type {
+  Database,
+  PlanetAtmosphere,
+  PlanetSurfaceStyle,
+  SpaceBackground,
+  UniverseMood,
+} from '@/types/database';
 import { computeAllStarLayouts } from '@/lib/universe/star-layout';
 
 export interface PublishStarInput {
@@ -16,6 +21,11 @@ export interface PublishPlanetInput {
   bio: string;
   planetColor: string;
   planetSurface: PlanetSurfaceStyle;
+  atmosphere: PlanetAtmosphere;
+  glow: number;
+  hasRing: boolean;
+  mood: UniverseMood;
+  spaceBackground: SpaceBackground;
   musicEnabled: boolean;
   musicUrl: string;
 }
@@ -42,6 +52,11 @@ export async function publishUserPlanet(
     bio: input.bio || null,
     planet_color: input.planetColor,
     planet_surface_style: input.planetSurface,
+    planet_atmosphere: input.atmosphere,
+    planet_glow: Math.min(5, Math.max(0, Math.round(input.glow))),
+    planet_has_ring: input.hasRing,
+    universe_mood: input.mood,
+    space_background: input.spaceBackground,
     music_enabled: input.musicEnabled,
     music_url: input.musicEnabled && input.musicUrl.trim() ? input.musicUrl.trim() : null,
     music_volume: 0.3,

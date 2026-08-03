@@ -10,6 +10,7 @@ import type {
 import type { StarVisualType } from '@/lib/universe/visual-styles';
 import { PlanetRenderer, UniverseBackground } from '@/components/planet/PlanetRenderer';
 import { StarsBackground } from '@/components/universe/StarsBackground';
+import { CosmicDust } from '@/components/universe/CosmicDust';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export interface PublicStar {
@@ -241,7 +242,13 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
   return (
     <main className="universe-root">
       <UniverseBackground mood={mood} spaceBackground={spaceBg} />
-      <StarsBackground seed={profile.username} count={70} />
+      <StarsBackground seed={profile.username} count={90} />
+      <CosmicDust
+        seed={`${profile.username}-dust`}
+        count={32}
+        color={`${planetColor}66`}
+      />
+      <div className="universe-vignette" aria-hidden />
 
       {musicEnabled ? (
         <>
@@ -261,6 +268,7 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         <div className="orbit orbit-one" />
         <div className="orbit orbit-two" />
         <div className="orbit orbit-three" />
+        <div className="orbit-glow" style={{ boxShadow: `0 0 120px ${planetColor}33` }} />
 
         {orbitingStars.map((star) => (
           <button
@@ -274,6 +282,7 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
             onClick={() => setSelectedStar(star)}
             aria-label={star.title}
           >
+            <span className="star-pulse" style={{ background: star.star_color || planetColor }} />
             <StarShape
               type={star.visual_type ?? 'sparkle'}
               size={star.size || 12}
@@ -299,7 +308,7 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           />
         </div>
 
-        <div className="identity">
+        <div className="identity motion-safe:animate-fade-rise">
           <h1>{profile.display_name || profile.username}</h1>
           <p className="username">@{profile.username}</p>
           {profile.bio ? <p className="bio">{profile.bio}</p> : null}
@@ -365,11 +374,33 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           overflow: hidden;
           color: white;
           isolation: isolate;
+          animation: universeEnter 1.1s ease-out both;
+        }
+
+        @keyframes universeEnter {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .universe-vignette {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background: radial-gradient(
+            ellipse at center,
+            transparent 35%,
+            rgba(0, 0, 0, 0.45) 100%
+          );
         }
 
         .music-toggle {
           position: fixed;
-          top: 20px;
+          top: 64px;
           right: 20px;
           z-index: 50;
           width: 44px;
@@ -398,28 +429,51 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           position: absolute;
           left: 50%;
           top: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.07);
+          border: 1px dashed rgba(255, 255, 255, 0.09);
           border-radius: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
         }
 
+        .orbit-glow {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 220px;
+          height: 220px;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 3;
+        }
+
         .orbit-one {
           width: 330px;
           height: 330px;
-          animation: orbitRotate 25s linear infinite;
+          animation: orbitRotate 25s linear infinite, orbitBreath 7s ease-in-out infinite;
         }
 
         .orbit-two {
           width: 520px;
           height: 520px;
-          animation: orbitRotate 38s linear infinite reverse;
+          animation: orbitRotate 38s linear infinite reverse, orbitBreath 9s ease-in-out infinite;
         }
 
         .orbit-three {
           width: 730px;
           height: 730px;
-          animation: orbitRotate 55s linear infinite;
+          opacity: 0.7;
+          animation: orbitRotate 55s linear infinite, orbitBreath 12s ease-in-out infinite;
+        }
+
+        @keyframes orbitBreath {
+          0%,
+          100% {
+            border-color: rgba(255, 255, 255, 0.06);
+          }
+          50% {
+            border-color: rgba(255, 255, 255, 0.16);
+          }
         }
 
         @keyframes orbitRotate {
@@ -463,6 +517,35 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           display: flex;
           flex-direction: column;
           align-items: center;
+          transition: transform 0.25s ease;
+        }
+
+        .user-star:hover,
+        .user-star:focus-visible {
+          transform: translate(-50%, -50%) scale(1.15);
+        }
+
+        .star-pulse {
+          position: absolute;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          opacity: 0.22;
+          filter: blur(6px);
+          animation: starPulse 3.2s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        @keyframes starPulse {
+          0%,
+          100% {
+            transform: scale(0.85);
+            opacity: 0.15;
+          }
+          50% {
+            transform: scale(1.35);
+            opacity: 0.35;
+          }
         }
 
         .star-shape {
@@ -505,6 +588,8 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           margin: 0;
           font-size: clamp(25px, 5vw, 38px);
           font-weight: 700;
+          text-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
+          letter-spacing: -0.02em;
         }
 
         .username {
@@ -550,13 +635,23 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         .star-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(1, 2, 8, 0.55);
-          backdrop-filter: blur(8px);
+          background: rgba(1, 2, 8, 0.62);
+          backdrop-filter: blur(10px);
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 20px;
           z-index: 100;
+          animation: overlayIn 0.25s ease-out;
+        }
+
+        @keyframes overlayIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
 
         .star-modal {
@@ -567,11 +662,22 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           padding: 42px 28px 28px;
           border-radius: 28px;
           text-align: center;
-          /* 35% opacity background as requested */
-          background: rgba(10, 12, 28, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
-          backdrop-filter: blur(20px);
+          background: rgba(10, 12, 28, 0.42);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5), 0 0 80px rgba(124, 140, 255, 0.12);
+          backdrop-filter: blur(22px);
+          animation: modalRise 0.35s ease-out;
+        }
+
+        @keyframes modalRise {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .close-button {
@@ -665,7 +771,11 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
           .orbit-one,
           .orbit-two,
           .orbit-three,
-          .planet-spin {
+          .planet-spin,
+          .star-pulse,
+          .universe-root,
+          .star-overlay,
+          .star-modal {
             animation: none !important;
           }
         }

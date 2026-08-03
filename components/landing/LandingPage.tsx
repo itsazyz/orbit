@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { StarsBackground } from '@/components/universe/StarsBackground';
+import { CosmicDust } from '@/components/universe/CosmicDust';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
 import { useLanguage } from '@/lib/i18n/context';
 import { getHomepageStrings } from '@/lib/site-config/homepage-strings';
@@ -32,11 +33,17 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
 
       {/* Hero */}
       <section className="relative flex min-h-dvh flex-col">
-        <StarsBackground seed="landing-hero" count={100} />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-space-void/50 to-space-void" />
+        <StarsBackground seed="landing-hero" count={120} />
+        <CosmicDust seed="landing-dust" count={36} color={`${hero.color}55`} />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at 50% 38%, ${hero.color}22 0%, transparent 42%), linear-gradient(to bottom, transparent, rgba(5,6,10,0.55) 55%, #05060a 100%)`,
+          }}
+        />
 
-        <header className="relative z-10 flex items-center justify-between px-6 py-6 md:px-12">
-          <span className="text-lg font-medium tracking-widest text-star">
+        <header className="relative z-10 flex items-center justify-between px-6 pt-16 pb-6 md:px-12 md:pt-16">
+          <span className="text-lg font-medium tracking-[0.28em] text-star">
             {copy.siteName}
           </span>
           <div className="flex items-center gap-4">
@@ -48,21 +55,32 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-20 text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, scale: 0.8, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 1.2, ease: 'easeOut' }}
-            className="mb-12"
+            className="relative mb-12"
           >
-            <PlanetRenderer
-              color={hero.color}
-              surfaceStyle={hero.surfaceStyle}
-              atmosphere={hero.atmosphere}
-              glow={hero.glow}
-              hasRing={hero.hasRing}
-              mood={hero.mood}
-              spaceBackground={hero.spaceBackground}
-              size={hero.size}
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+              style={{ background: `${hero.color}33` }}
             />
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <PlanetRenderer
+                color={hero.color}
+                surfaceStyle={hero.surfaceStyle}
+                atmosphere={hero.atmosphere}
+                glow={hero.glow}
+                hasRing={hero.hasRing}
+                mood={hero.mood}
+                spaceBackground={hero.spaceBackground}
+                size={hero.size}
+                animate
+                spin
+              />
+            </motion.div>
           </motion.div>
 
           <motion.h1
@@ -108,16 +126,21 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
           title={copy.section1Title ?? ''}
           description={copy.section1Desc ?? ''}
           visual={
-            <PlanetRenderer
-              color="#6cd9ff"
-              surfaceStyle="banded"
-              atmosphere="thick"
-              glow={3}
-              hasRing={false}
-              mood="creative"
-              spaceBackground="nebula"
-              size={120}
-            />
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-0 rounded-full bg-accent-calm/20 blur-2xl" />
+              <PlanetRenderer
+                color="#6cd9ff"
+                surfaceStyle="banded"
+                atmosphere="thick"
+                glow={4}
+                hasRing
+                mood="creative"
+                spaceBackground="nebula"
+                size={130}
+                animate
+                spin
+              />
+            </div>
           }
         />
 
@@ -128,12 +151,16 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
           visual={
             <div className="flex flex-wrap justify-center gap-3">
               {copy.examples.map((example, i) => (
-                <span
+                <motion.span
                   key={i}
-                  className="rounded-full border border-space-border bg-space-panel px-4 py-2 text-sm text-star-dim"
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-star-dim shadow-[0_0_24px_rgba(124,140,255,0.08)] backdrop-blur-sm"
                 >
                   {example}
-                </span>
+                </motion.span>
               ))}
             </div>
           }

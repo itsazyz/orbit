@@ -117,6 +117,11 @@ export interface LoadedPlanetEditorData {
     bio: string;
     planet_color: string;
     planet_surface_style: string;
+    planet_atmosphere: string;
+    planet_glow: number;
+    planet_has_ring: boolean;
+    universe_mood: string;
+    space_background: string;
     music_enabled: boolean;
     music_url: string;
     music_volume: number;
@@ -145,7 +150,7 @@ export async function loadPlanetForEditor(
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select(
-      'display_name, username, bio, planet_color, planet_surface_style, music_enabled, music_url, music_volume, is_published'
+      'display_name, username, bio, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_enabled, music_url, music_volume, is_published'
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -156,6 +161,11 @@ export async function loadPlanetForEditor(
     bio: null,
     planet_color: '#7C3AED',
     planet_surface_style: 'smooth',
+    planet_atmosphere: 'thin',
+    planet_glow: 3,
+    planet_has_ring: false,
+    universe_mood: 'calm',
+    space_background: 'deep_space',
     music_enabled: false,
     music_url: null,
     music_volume: 0.3,
@@ -186,6 +196,20 @@ export async function loadPlanetForEditor(
         bio: safeProfile.bio ?? '',
         planet_color: safeProfile.planet_color ?? '#7C3AED',
         planet_surface_style: safeProfile.planet_surface_style ?? 'smooth',
+        planet_atmosphere:
+          ('planet_atmosphere' in safeProfile && safeProfile.planet_atmosphere) ||
+          'thin',
+        planet_glow:
+          ('planet_glow' in safeProfile && typeof safeProfile.planet_glow === 'number'
+            ? safeProfile.planet_glow
+            : 3),
+        planet_has_ring:
+          ('planet_has_ring' in safeProfile && !!safeProfile.planet_has_ring) || false,
+        universe_mood:
+          ('universe_mood' in safeProfile && safeProfile.universe_mood) || 'calm',
+        space_background:
+          ('space_background' in safeProfile && safeProfile.space_background) ||
+          'deep_space',
         music_enabled: safeProfile.music_enabled ?? false,
         music_url: safeProfile.music_url ?? '',
         music_volume: safeProfile.music_volume ?? 0.3,
@@ -207,6 +231,19 @@ export async function loadPlanetForEditor(
       bio: safeProfile.bio ?? '',
       planet_color: safeProfile.planet_color ?? '#7C3AED',
       planet_surface_style: safeProfile.planet_surface_style ?? 'smooth',
+      planet_atmosphere:
+        ('planet_atmosphere' in safeProfile && safeProfile.planet_atmosphere) || 'thin',
+      planet_glow:
+        'planet_glow' in safeProfile && typeof safeProfile.planet_glow === 'number'
+          ? safeProfile.planet_glow
+          : 3,
+      planet_has_ring:
+        ('planet_has_ring' in safeProfile && !!safeProfile.planet_has_ring) || false,
+      universe_mood:
+        ('universe_mood' in safeProfile && safeProfile.universe_mood) || 'calm',
+      space_background:
+        ('space_background' in safeProfile && safeProfile.space_background) ||
+        'deep_space',
       music_enabled: safeProfile.music_enabled ?? false,
       music_url: safeProfile.music_url ?? '',
       music_volume: safeProfile.music_volume ?? 0.3,
