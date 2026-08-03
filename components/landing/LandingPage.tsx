@@ -25,12 +25,7 @@ export function LandingPage({ homepage, siteSettings }: LandingPageProps) {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
-      {siteSettings.showAnnouncement ? (
-        <div className="relative z-20 border-b border-violet-500/30 bg-violet-500/10 px-4 py-2 text-center text-sm text-violet-100">
-          {lang === 'ar' ? siteSettings.announcementAr : siteSettings.announcementEn}
-        </div>
-      ) : null}
-
+      {/* Announcement banner is rendered site-wide in root layout */}
       {/* Hero */}
       <section className="relative flex min-h-dvh flex-col">
         <StarsBackground seed="landing-hero" count={120} />

@@ -146,15 +146,22 @@ export async function saveSiteSettings(
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
 
-  const value = normalizeSiteSettings(settings) as unknown as Record<
-    string,
-    unknown
-  >;
+  const normalized = normalizeSiteSettings(settings);
+  const hasAnnouncementText =
+    normalized.announcementEn.trim().length > 0 ||
+    normalized.announcementAr.trim().length > 0;
+
+  // If admin wrote announcement text, show the banner automatically
+  const value = {
+    ...normalized,
+    showAnnouncement: normalized.showAnnouncement || hasAnnouncementText,
+  } as unknown as Record<string, unknown>;
+
   const result = await upsertSiteConfig(SITE_CONFIG_KEYS.siteSettings, value);
   if (!result.ok) return result;
 
-  // Avoid revalidatePath here — it can crash the admin RSC tree in production.
-  // Homepage will pick up new settings on the next normal request.
+  // Safe now: admin UI loads client-side and won't remount from this
+  revalidatePath('/', 'layout');
   return { ok: true };
 }
 

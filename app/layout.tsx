@@ -3,7 +3,9 @@ import { Inter, Noto_Sans_Arabic } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { LanguageProvider } from '@/lib/i18n/context';
 import { GlobalLanguageBar } from '@/components/layout/GlobalLanguageBar';
+import { SiteAnnouncementBar } from '@/components/layout/SiteAnnouncementBar';
 import { LANGUAGE_COOKIE, parseLanguage } from '@/lib/i18n';
+import { loadSiteSettingsServer } from '@/lib/site-config/load';
 import './globals.css';
 
 const inter = Inter({
@@ -37,12 +39,18 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const lang = parseLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const settings = await loadSiteSettingsServer();
+  const announcementText =
+    lang === 'ar' ? settings.announcementAr : settings.announcementEn;
 
   return (
     <html lang={lang} dir={dir} className="dark">
       <body className={`${inter.variable} ${notoArabic.variable}`}>
         <LanguageProvider initialLang={lang}>
           <GlobalLanguageBar />
+          {settings.showAnnouncement ? (
+            <SiteAnnouncementBar text={announcementText} />
+          ) : null}
           {children}
         </LanguageProvider>
       </body>

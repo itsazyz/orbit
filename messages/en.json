@@ -387,7 +387,7 @@
       "desc": "Maintenance mode and announcements",
       "maintenance": "Maintenance mode (shows maintenance page on homepage)",
       "allowSignups": "Allow new sign-ups",
-      "announcement": "Show announcement banner on homepage",
+      "announcement": "Show announcement banner on all pages",
       "maintenanceEn": "Maintenance message (EN)",
       "maintenanceAr": "Maintenance message (AR)",
       "announcementEn": "Announcement (EN)",

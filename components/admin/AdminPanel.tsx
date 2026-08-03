@@ -84,14 +84,19 @@ export function AdminPanel({ data }: AdminPanelProps) {
 
   function saveSettings() {
     startTransition(async () => {
+      const announcementEn = String(settings.announcementEn ?? '');
+      const announcementAr = String(settings.announcementAr ?? '');
+      const hasText =
+        announcementEn.trim().length > 0 || announcementAr.trim().length > 0;
+
       const payload: SiteSettingsConfig = {
         maintenanceMode: !!settings.maintenanceMode,
         maintenanceMessageEn: String(settings.maintenanceMessageEn ?? ''),
         maintenanceMessageAr: String(settings.maintenanceMessageAr ?? ''),
         allowSignups: !!settings.allowSignups,
-        showAnnouncement: !!settings.showAnnouncement,
-        announcementEn: String(settings.announcementEn ?? ''),
-        announcementAr: String(settings.announcementAr ?? ''),
+        showAnnouncement: !!settings.showAnnouncement || hasText,
+        announcementEn,
+        announcementAr,
       };
 
       const result = await saveSiteSettings(payload);

@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
@@ -75,6 +76,7 @@ export async function loadHomepageContentAdmin(): Promise<HomepageContentConfig>
 }
 
 export async function loadSiteSettingsServer(): Promise<SiteSettingsConfig> {
+  noStore();
   try {
     const supabase = await createServerClient();
     const value = await fetchConfigValue(supabase, SITE_CONFIG_KEYS.siteSettings);
