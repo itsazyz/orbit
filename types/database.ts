@@ -12,12 +12,8 @@ export type UniverseMood =
   | 'warm'
   | 'futuristic'
   | 'minimal';
-export type PlanetSurfaceStyle =
-  | 'smooth'
-  | 'cratered'
-  | 'banded'
-  | 'crystalline'
-  | 'oceanic';
+/** Planet surface look — see PLANET_SURFACE_CATALOG for the full set */
+export type PlanetSurfaceStyle = string;
 export type PlanetAtmosphere = 'none' | 'thin' | 'thick' | 'stormy';
 export type SpaceBackground = 'deep_space' | 'nebula' | 'aurora' | 'void';
 

@@ -1,4 +1,8 @@
 import type { PlanetSurfaceStyle } from '@/types/database';
+import {
+  PLANET_SURFACE_CATALOG,
+  isPlanetSurfaceId,
+} from '@/lib/universe/planet-surfaces';
 
 export type StarVisualType =
   | 'sparkle'
@@ -23,13 +27,9 @@ export const STAR_VISUAL_OPTIONS: VisualPresetOption[] = [
   { id: 'classic', labelEn: 'Classic star', labelAr: 'نجمة كلاسيكية' },
 ];
 
-export const PLANET_SURFACE_OPTIONS: VisualPresetOption[] = [
-  { id: 'smooth', labelEn: 'Smooth', labelAr: 'أملس' },
-  { id: 'cratered', labelEn: 'Cratered', labelAr: 'فوهات' },
-  { id: 'banded', labelEn: 'Banded', labelAr: 'مخطّط' },
-  { id: 'crystalline', labelEn: 'Crystalline', labelAr: 'بلوري' },
-  { id: 'oceanic', labelEn: 'Oceanic', labelAr: 'محيطي' },
-];
+export const PLANET_SURFACE_OPTIONS: VisualPresetOption[] = PLANET_SURFACE_CATALOG.map(
+  ({ id, labelEn, labelAr }) => ({ id, labelEn, labelAr })
+);
 
 export const PLANET_MOOD_OPTIONS: VisualPresetOption[] = [
   { id: 'calm', labelEn: 'Calm', labelAr: 'هادئ' },
@@ -45,7 +45,7 @@ export function isStarVisualType(value: string): value is StarVisualType {
 }
 
 export function isPlanetSurfaceStyle(value: string): value is PlanetSurfaceStyle {
-  return PLANET_SURFACE_OPTIONS.some((o) => o.id === value);
+  return isPlanetSurfaceId(value);
 }
 
 export const DEFAULT_VISUAL_PRESETS = {

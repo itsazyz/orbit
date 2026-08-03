@@ -21,7 +21,9 @@ import { loadPlanetForEditor } from "@/lib/profile/client";
 import { publishUserPlanet } from "@/lib/profile/publish-planet";
 import { MusicPicker } from "@/components/create/MusicPicker";
 import { CreateLivePreview } from "@/components/create/CreateLivePreview";
+import { PlanetSurfacePicker } from "@/components/create/PlanetSurfacePicker";
 import { PlanetRenderer } from "@/components/planet/PlanetRenderer";
+import { normalizePlanetSurface } from "@/lib/universe/planet-surfaces";
 import { useLanguage } from "@/lib/i18n/context";
 import { interpolate } from "@/lib/i18n";
 import "./create.css";
@@ -45,12 +47,10 @@ type Star = {
 
 interface CreatePageClientProps {
   initialStarTypes: VisualPresetOption[];
-  initialPlanetSurfaces: VisualPresetOption[];
 }
 
 export function CreatePageClient({
   initialStarTypes,
-  initialPlanetSurfaces,
 }: CreatePageClientProps) {
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -107,7 +107,9 @@ export function CreatePageClient({
           setUsername(existing.profile.username);
           setBio(existing.profile.bio);
           setPlanetColor(existing.profile.planet_color);
-          setPlanetSurface(existing.profile.planet_surface_style as PlanetSurfaceStyle);
+          setPlanetSurface(
+            normalizePlanetSurface(existing.profile.planet_surface_style)
+          );
           setAtmosphere(
             (existing.profile.planet_atmosphere as PlanetAtmosphere) || "thin"
           );
@@ -396,23 +398,12 @@ export function CreatePageClient({
               </div>
 
               <label style={styles.label}>{t("create.planetSurfaceLabel")}</label>
-              <div style={styles.chipRow} className="create-chip-row">
-                {initialPlanetSurfaces.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() =>
-                      setPlanetSurface(option.id as PlanetSurfaceStyle)
-                    }
-                    style={{
-                      ...styles.chip,
-                      ...(planetSurface === option.id ? styles.chipActive : {}),
-                    }}
-                  >
-                    {presetLabel(option)}
-                  </button>
-                ))}
-              </div>
+              <p style={styles.sectionSubtitle}>{t("create.planetSurfaceHint")}</p>
+              <PlanetSurfacePicker
+                color={planetColor}
+                value={planetSurface}
+                onChange={setPlanetSurface}
+              />
 
               <label style={styles.label}>{t("create.themesLabel")}</label>
               <p style={styles.sectionSubtitle}>{t("create.themesHint")}</p>

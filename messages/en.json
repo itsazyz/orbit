@@ -110,6 +110,7 @@
     "aboutPlaceholder": "Tell people about your world...",
     "planetColorLabel": "Planet color",
     "planetSurfaceLabel": "Planet surface",
+    "planetSurfaceHint": "Pick a surface that feels like you — each look has its own personality.",
     "themesLabel": "Universe themes",
     "themesHint": "Start from a look, then fine-tune anything below.",
     "atmosphereLabel": "Atmosphere",

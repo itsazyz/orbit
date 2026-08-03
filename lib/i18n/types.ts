@@ -113,6 +113,7 @@ export interface Dictionary {
     aboutPlaceholder: string;
     planetColorLabel: string;
     planetSurfaceLabel: string;
+    planetSurfaceHint: string;
     themesLabel: string;
     themesHint: string;
     atmosphereLabel: string;

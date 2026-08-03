@@ -13,6 +13,7 @@ import {
   glowIntensity,
   MOOD_PRESETS,
 } from '@/lib/universe/constants';
+import { PlanetSurfaceLayers } from '@/components/planet/PlanetSurfaceLayers';
 import { cn } from '@/lib/utils';
 
 interface PlanetRendererProps {
@@ -131,79 +132,7 @@ export function PlanetRenderer({
           boxShadow: `${glowStyle}, inset -${size * 0.12}px -${size * 0.08}px ${size * 0.2}px rgba(0,0,0,0.45)`,
         }}
       >
-        {/* Specular highlight */}
-        <div
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: size * 0.45,
-            height: size * 0.28,
-            top: '12%',
-            left: '18%',
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.35) 0%, transparent 70%)',
-            filter: 'blur(1px)',
-          }}
-        />
-
-        {surfaceStyle === 'cratered' ? (
-          <>
-            <div
-              className="absolute rounded-full bg-black/25"
-              style={{ width: size * 0.16, height: size * 0.16, top: '22%', left: '28%' }}
-            />
-            <div
-              className="absolute rounded-full bg-black/18"
-              style={{ width: size * 0.1, height: size * 0.1, top: '52%', left: '58%' }}
-            />
-            <div
-              className="absolute rounded-full bg-black/15"
-              style={{ width: size * 0.07, height: size * 0.07, top: '38%', left: '68%' }}
-            />
-          </>
-        ) : null}
-
-        {surfaceStyle === 'banded' ? (
-          <>
-            <div
-              className="absolute inset-x-0 bg-black/10"
-              style={{ top: '30%', height: size * 0.08 }}
-            />
-            <div
-              className="absolute inset-x-0 bg-white/10"
-              style={{ top: '48%', height: size * 0.06 }}
-            />
-            <div
-              className="absolute inset-x-0 bg-black/12"
-              style={{ top: '62%', height: size * 0.1 }}
-            />
-          </>
-        ) : null}
-
-        {surfaceStyle === 'crystalline' ? (
-          <>
-            <div
-              className="absolute"
-              style={{
-                width: size * 0.35,
-                height: size * 0.35,
-                top: '20%',
-                left: '40%',
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.35), transparent)',
-                clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                opacity: 0.55,
-              }}
-            />
-          </>
-        ) : null}
-
-        {surfaceStyle === 'oceanic' ? (
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(circle at 60% 40%, rgba(255,255,255,0.12) 0%, transparent 40%), radial-gradient(circle at 30% 70%, rgba(0,0,0,0.2) 0%, transparent 35%)',
-            }}
-          />
-        ) : null}
+        <PlanetSurfaceLayers surfaceStyle={surfaceStyle} color={color} size={size} />
 
         {isStormy ? (
           <div

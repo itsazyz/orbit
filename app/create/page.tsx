@@ -7,9 +7,6 @@ export default async function CreatePage() {
   const presets = await loadVisualPresetsServer();
 
   return (
-    <CreatePageClient
-      initialStarTypes={presets.starTypes}
-      initialPlanetSurfaces={presets.planetSurfaces}
-    />
+    <CreatePageClient initialStarTypes={presets.starTypes} />
   );
 }

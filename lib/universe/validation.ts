@@ -50,7 +50,7 @@ export const identityStepSchema = z.object({
 
 export const planetCustomizationSchema = z.object({
   planet_color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  planet_surface_style: z.enum(['smooth', 'cratered', 'banded', 'crystalline', 'oceanic']),
+  planet_surface_style: z.string().min(2).max(40),
   planet_atmosphere: z.enum(['none', 'thin', 'thick', 'stormy']),
   planet_glow: z.number().int().min(0).max(5),
   planet_has_ring: z.boolean(),

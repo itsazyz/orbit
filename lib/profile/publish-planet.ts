@@ -7,6 +7,7 @@ import type {
   UniverseMood,
 } from '@/types/database';
 import { computeAllStarLayouts } from '@/lib/universe/star-layout';
+import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
 
 export interface PublishStarInput {
   title: string;
@@ -51,7 +52,7 @@ export async function publishUserPlanet(
     display_name: input.displayName,
     bio: input.bio || null,
     planet_color: input.planetColor,
-    planet_surface_style: input.planetSurface,
+    planet_surface_style: normalizePlanetSurface(input.planetSurface),
     planet_atmosphere: input.atmosphere,
     planet_glow: Math.min(5, Math.max(0, Math.round(input.glow))),
     planet_has_ring: input.hasRing,
