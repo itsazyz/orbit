@@ -122,5 +122,23 @@ export function normalizeHomepageContent(value: unknown): HomepageContentConfig 
 
 export function normalizeSiteSettings(value: unknown): SiteSettingsConfig {
   if (!value || typeof value !== 'object') return DEFAULT_SITE_SETTINGS;
-  return mergeRecords(DEFAULT_SITE_SETTINGS, value as Partial<SiteSettingsConfig>);
+  const record = value as Record<string, unknown>;
+
+  return {
+    maintenanceMode: Boolean(
+      record.maintenanceMode ?? DEFAULT_SITE_SETTINGS.maintenanceMode
+    ),
+    maintenanceMessageEn: String(
+      record.maintenanceMessageEn ?? DEFAULT_SITE_SETTINGS.maintenanceMessageEn
+    ),
+    maintenanceMessageAr: String(
+      record.maintenanceMessageAr ?? DEFAULT_SITE_SETTINGS.maintenanceMessageAr
+    ),
+    allowSignups: Boolean(record.allowSignups ?? DEFAULT_SITE_SETTINGS.allowSignups),
+    showAnnouncement: Boolean(
+      record.showAnnouncement ?? DEFAULT_SITE_SETTINGS.showAnnouncement
+    ),
+    announcementEn: String(record.announcementEn ?? ''),
+    announcementAr: String(record.announcementAr ?? ''),
+  };
 }

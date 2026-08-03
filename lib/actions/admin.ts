@@ -51,14 +51,18 @@ export async function saveVisualPresets(presets: VisualPresetsConfig) {
   const admin = createServiceRoleClient();
   const value = normalizeVisualPresets(presets);
 
-  const { error } = await admin.from('site_config').upsert({
-    key: SITE_CONFIG_KEYS.visualPresets,
-    value,
-  });
+  const { error } = await admin.from('site_config').upsert(
+    {
+      key: SITE_CONFIG_KEYS.visualPresets,
+      value: value as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'key' }
+  );
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`Visual presets save failed: ${error.message}`);
   revalidateSite();
-  return { ok: true };
+  return { ok: true as const };
 }
 
 export async function saveHomepageContent(content: HomepageContentConfig) {
@@ -66,14 +70,18 @@ export async function saveHomepageContent(content: HomepageContentConfig) {
   const admin = createServiceRoleClient();
   const value = normalizeHomepageContent(content);
 
-  const { error } = await admin.from('site_config').upsert({
-    key: SITE_CONFIG_KEYS.homepageContent,
-    value,
-  });
+  const { error } = await admin.from('site_config').upsert(
+    {
+      key: SITE_CONFIG_KEYS.homepageContent,
+      value: value as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'key' }
+  );
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(`Homepage save failed: ${error.message}`);
   revalidateSite();
-  return { ok: true };
+  return { ok: true as const };
 }
 
 export async function saveSiteSettings(settings: SiteSettingsConfig) {
@@ -81,14 +89,21 @@ export async function saveSiteSettings(settings: SiteSettingsConfig) {
   const admin = createServiceRoleClient();
   const value = normalizeSiteSettings(settings);
 
-  const { error } = await admin.from('site_config').upsert({
-    key: SITE_CONFIG_KEYS.siteSettings,
-    value,
-  });
+  const { error } = await admin.from('site_config').upsert(
+    {
+      key: SITE_CONFIG_KEYS.siteSettings,
+      value: value as unknown as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'key' }
+  );
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new Error(`Site settings save failed: ${error.message}`);
+  }
+
   revalidateSite();
-  return { ok: true };
+  return { ok: true as const };
 }
 
 export async function setPlanetPublished(profileId: string, isPublished: boolean) {

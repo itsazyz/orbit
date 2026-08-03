@@ -89,7 +89,7 @@ export function AdminField({
       <span className="text-xs uppercase tracking-wide text-slate-500">{label}</span>
       {multiline ? (
         <textarea
-          value={value}
+          value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
           dir={dir}
@@ -97,7 +97,7 @@ export function AdminField({
         />
       ) : (
         <input
-          value={value}
+          value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           dir={dir}
           className={className}

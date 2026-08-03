@@ -148,8 +148,16 @@ export interface Database {
       };
       site_config: {
         Row: { key: string; value: Record<string, unknown>; updated_at: string };
-        Insert: { key: string; value: Record<string, unknown> };
-        Update: Partial<{ key: string; value: Record<string, unknown> }>;
+        Insert: {
+          key: string;
+          value: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          key: string;
+          value: Record<string, unknown>;
+          updated_at: string;
+        }>;
       };
     };
     Views: {

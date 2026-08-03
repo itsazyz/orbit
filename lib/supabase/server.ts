@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 import { getSupabaseEnv, getServiceRoleKey } from '@/lib/env';
@@ -77,21 +78,12 @@ export function createServiceRoleClient() {
     );
   }
 
-  return createServerClient<Database>(
-    env.url,
-    serviceRoleKey,
-    {
-      cookies: {
-        get() {
-          return undefined;
-        },
-        set() {
-          /* no-op: service role client is not tied to a browser session */
-        },
-        remove() {
-          /* no-op */
-        },
-      },
-    }
-  );
+  // Use the plain JS client (not SSR cookie client) so admin writes
+  // reliably authenticate with the service role key.
+  return createSupabaseClient<Database>(env.url, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }

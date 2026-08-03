@@ -85,9 +85,20 @@ export function AdminPanel({ data }: AdminPanelProps) {
   function saveSettings() {
     startTransition(async () => {
       try {
-        await saveSiteSettings(settings);
+        const payload: SiteSettingsConfig = {
+          maintenanceMode: !!settings.maintenanceMode,
+          maintenanceMessageEn: settings.maintenanceMessageEn ?? '',
+          maintenanceMessageAr: settings.maintenanceMessageAr ?? '',
+          allowSignups: !!settings.allowSignups,
+          showAnnouncement: !!settings.showAnnouncement,
+          announcementEn: settings.announcementEn ?? '',
+          announcementAr: settings.announcementAr ?? '',
+        };
+        await saveSiteSettings(payload);
+        setSettings(payload);
         notify(t('admin.messages.settingsSaved'));
       } catch (e) {
+        console.error('[admin] saveSiteSettings failed:', e);
         notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
       }
     });
@@ -584,14 +595,20 @@ export function AdminPanel({ data }: AdminPanelProps) {
               />
               <AdminField
                 label={t('admin.settings.announcementEn')}
-                value={settings.announcementEn}
-                onChange={(announcementEn) => setSettings({ ...settings, announcementEn })}
+                value={settings.announcementEn ?? ''}
+                multiline
+                onChange={(announcementEn) =>
+                  setSettings({ ...settings, announcementEn })
+                }
               />
               <AdminField
                 label={t('admin.settings.announcementAr')}
-                value={settings.announcementAr}
+                value={settings.announcementAr ?? ''}
                 dir="rtl"
-                onChange={(announcementAr) => setSettings({ ...settings, announcementAr })}
+                multiline
+                onChange={(announcementAr) =>
+                  setSettings({ ...settings, announcementAr })
+                }
               />
             </div>
             <button
