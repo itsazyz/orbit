@@ -5,12 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { VisualPresetOption } from "@/lib/universe/visual-styles";
-import { PLANET_MOOD_OPTIONS } from "@/lib/universe/visual-styles";
-import {
-  ATMOSPHERE_OPTIONS,
-  SPACE_BACKGROUND_OPTIONS,
-  UNIVERSE_THEMES,
-} from "@/lib/universe/themes";
+import { UNIVERSE_THEMES } from "@/lib/universe/themes";
 import type {
   PlanetAtmosphere,
   PlanetSurfaceStyle,
@@ -22,6 +17,12 @@ import { publishUserPlanet } from "@/lib/profile/publish-planet";
 import { MusicPicker } from "@/components/create/MusicPicker";
 import { CreateLivePreview } from "@/components/create/CreateLivePreview";
 import { PlanetSurfacePicker } from "@/components/create/PlanetSurfacePicker";
+import {
+  AtmospherePicker,
+  BackgroundPicker,
+  MoodPicker,
+  StarShapePicker,
+} from "@/components/create/VisualPickers";
 import { PlanetRenderer } from "@/components/planet/PlanetRenderer";
 import { normalizePlanetSurface } from "@/lib/universe/planet-surfaces";
 import { useLanguage } from "@/lib/i18n/context";
@@ -46,12 +47,10 @@ type Star = {
 };
 
 interface CreatePageClientProps {
-  initialStarTypes: VisualPresetOption[];
+  initialStarTypes?: VisualPresetOption[];
 }
 
-export function CreatePageClient({
-  initialStarTypes,
-}: CreatePageClientProps) {
+export function CreatePageClient(_props: CreatePageClientProps = {}) {
   const router = useRouter();
   const { t, lang } = useLanguage();
   const presetLabel = (option: { labelEn: string; labelAr: string }) =>
@@ -80,9 +79,7 @@ export function CreatePageClient({
   const [starTitle, setStarTitle] = useState("");
   const [starContent, setStarContent] = useState("");
   const [starIcon, setStarIcon] = useState("✦");
-  const [starVisualType, setStarVisualType] = useState(
-    initialStarTypes[0]?.id ?? "sparkle"
-  );
+  const [starVisualType, setStarVisualType] = useState("sparkle");
 
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
@@ -432,21 +429,11 @@ export function CreatePageClient({
               </div>
 
               <label style={styles.label}>{t("create.atmosphereLabel")}</label>
-              <div style={styles.chipRow} className="create-chip-row">
-                {ATMOSPHERE_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setAtmosphere(option.id as PlanetAtmosphere)}
-                    style={{
-                      ...styles.chip,
-                      ...(atmosphere === option.id ? styles.chipActive : {}),
-                    }}
-                  >
-                    {presetLabel(option)}
-                  </button>
-                ))}
-              </div>
+              <AtmospherePicker
+                color={planetColor}
+                value={atmosphere}
+                onChange={setAtmosphere}
+              />
 
               <label style={styles.label}>
                 {t("create.glowLabel")} — {glow}
@@ -476,40 +463,13 @@ export function CreatePageClient({
               </button>
 
               <label style={styles.label}>{t("create.moodLabel")}</label>
-              <div style={styles.chipRow} className="create-chip-row">
-                {PLANET_MOOD_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setMood(option.id as UniverseMood)}
-                    style={{
-                      ...styles.chip,
-                      ...(mood === option.id ? styles.chipActive : {}),
-                    }}
-                  >
-                    {presetLabel(option)}
-                  </button>
-                ))}
-              </div>
+              <MoodPicker value={mood} onChange={setMood} />
 
               <label style={styles.label}>{t("create.backgroundLabel")}</label>
-              <div style={styles.chipRow} className="create-chip-row">
-                {SPACE_BACKGROUND_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() =>
-                      setSpaceBackground(option.id as SpaceBackground)
-                    }
-                    style={{
-                      ...styles.chip,
-                      ...(spaceBackground === option.id ? styles.chipActive : {}),
-                    }}
-                  >
-                    {presetLabel(option)}
-                  </button>
-                ))}
-              </div>
+              <BackgroundPicker
+                value={spaceBackground}
+                onChange={setSpaceBackground}
+              />
 
               <label style={styles.label}>{t("create.musicLabel")}</label>
               <MusicPicker
@@ -582,23 +542,10 @@ export function CreatePageClient({
                   </div>
 
                   <label style={styles.label}>{t("create.starShapeLabel")}</label>
-                  <div style={styles.chipRow} className="create-chip-row">
-                    {initialStarTypes.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setStarVisualType(option.id)}
-                        style={{
-                          ...styles.chip,
-                          ...(starVisualType === option.id
-                            ? styles.chipActive
-                            : {}),
-                        }}
-                      >
-                        {presetLabel(option)}
-                      </button>
-                    ))}
-                  </div>
+                  <StarShapePicker
+                    value={starVisualType}
+                    onChange={setStarVisualType}
+                  />
 
                   <label style={styles.label}>{t("create.starTitleLabel")}</label>
 

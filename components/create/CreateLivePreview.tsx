@@ -8,6 +8,7 @@ import {
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
 import { StarShape } from '@/components/universe/StarShape';
+import { STAR_TYPE_COLORS } from '@/lib/universe/constants';
 import type {
   PlanetAtmosphere,
   PlanetSurfaceStyle,
@@ -132,8 +133,8 @@ export function CreateLivePreview({
           >
             <StarShape
               type={star.visualType || 'sparkle'}
-              size={star.size}
-              color="#ffffff"
+              size={Math.max(star.size, 12)}
+              color={STAR_TYPE_COLORS[star.visualType || 'sparkle'] || '#ffffff'}
               icon={star.icon}
             />
             <span className="create-orbit-star-label">{star.title}</span>

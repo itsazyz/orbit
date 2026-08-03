@@ -43,11 +43,11 @@ export function PlanetSurfacePicker({
                   color={color}
                   surfaceStyle={surface.id}
                   atmosphere="thin"
-                  glow={selected ? 4 : 2}
+                  glow={selected ? 5 : 3}
                   hasRing={false}
                   mood="calm"
                   spaceBackground="deep_space"
-                  size={56}
+                  size={64}
                   animate={selected}
                   spin={false}
                 />

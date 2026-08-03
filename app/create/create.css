@@ -519,7 +519,82 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 84px;
+}
+
+.visual-pick-grid {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.visual-pick-grid.stars,
+.visual-pick-grid.atmosphere,
+.visual-pick-grid.moods,
+.visual-pick-grid.backgrounds {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 480px) {
+  .visual-pick-grid.stars,
+  .visual-pick-grid.atmosphere,
+  .visual-pick-grid.moods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .visual-pick-grid.backgrounds {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.visual-pick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d9def0;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.visual-pick-card:hover {
+  border-color: rgba(167, 139, 250, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.visual-pick-card.is-selected {
+  border-color: rgba(167, 139, 250, 0.9);
+  background: rgba(139, 92, 246, 0.18);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.22);
+  transform: translateY(-1px);
+}
+
+.visual-pick-stage {
+  width: 100%;
   min-height: 72px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #1a2040 0%, #05060a 75%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.visual-pick-stage.dark {
+  background: radial-gradient(circle at 50% 45%, #12162a 0%, #020308 80%);
+  min-height: 64px;
+}
+
+.mood-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
 }
 
 .planet-surface-name {

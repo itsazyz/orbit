@@ -12,6 +12,7 @@ import { PlanetRenderer, UniverseBackground } from '@/components/planet/PlanetRe
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
 import { StarShape } from '@/components/universe/StarShape';
+import { STAR_TYPE_COLORS } from '@/lib/universe/constants';
 import { Volume2, VolumeX } from 'lucide-react';
 
 export interface PublicStar {
@@ -166,13 +167,25 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
               onClick={() => setSelectedStar(star)}
               aria-label={star.title}
             >
-              <span className="star-pulse" style={{ background: star.star_color || planetColor }} />
-              <StarShape
-                type={star.visual_type ?? 'sparkle'}
-                size={star.size || 12}
-                color={star.star_color || '#ffffff'}
-                icon={star.icon}
-              />
+            <span
+              className="star-pulse"
+              style={{
+                background:
+                  STAR_TYPE_COLORS[star.visual_type ?? 'sparkle'] ||
+                  star.star_color ||
+                  planetColor,
+              }}
+            />
+            <StarShape
+              type={star.visual_type ?? 'sparkle'}
+              size={Math.max(star.size || 12, 14)}
+              color={
+                STAR_TYPE_COLORS[star.visual_type ?? 'sparkle'] ||
+                star.star_color ||
+                '#ffffff'
+              }
+              icon={star.icon}
+            />
               <span className="star-label">{star.title}</span>
             </button>
           ))}
