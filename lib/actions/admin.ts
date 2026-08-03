@@ -1,11 +1,14 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service';
 import { isAdminEmail } from '@/lib/admin';
 import { loadAdminDashboard } from '@/lib/admin/dashboard-data';
 import type { AdminDashboardPayload } from '@/lib/admin/dashboard-data';
+import { isValidServiceRoleKey, getServiceRoleKey } from '@/lib/env';
 import { SITE_CONFIG_KEYS } from '@/lib/site-config/keys';
 import {
   normalizeHomepageContent,
@@ -54,16 +57,48 @@ async function requireAdmin(): Promise<
   }
 }
 
+async function getWritableSupabase(): Promise<
+  | { ok: true; client: SupabaseClient<Database>; mode: 'service_role' | 'user' }
+  | { ok: false; error: string }
+> {
+  if (isValidServiceRoleKey(getServiceRoleKey())) {
+    try {
+      return { ok: true, client: createServiceRoleClient(), mode: 'service_role' };
+    } catch (error) {
+      console.error('[admin] service role client failed:', error);
+    }
+  }
+
+  // Fallback: write as the signed-in admin (needs RLS policy for authenticated)
+  try {
+    const userClient = await createClient();
+    return { ok: true, client: userClient, mode: 'user' };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'No writable database client available',
+    };
+  }
+}
+
 async function upsertSiteConfig(
   key: string,
   value: Record<string, unknown>
 ): Promise<ActionResult> {
   try {
-    const admin = createServiceRoleClient();
-    // Ensure a plain JSON object (no class instances / prototypes)
-    const plainValue = JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+    const writable = await getWritableSupabase();
+    if (!writable.ok) return writable;
 
-    const { data, error } = await admin
+    const { client, mode } = writable;
+    const plainValue = JSON.parse(JSON.stringify(value)) as Record<
+      string,
+      unknown
+    >;
+
+    const { data, error } = await client
       .from('site_config')
       .upsert(
         {
@@ -77,15 +112,26 @@ async function upsertSiteConfig(
       .single();
 
     if (error) {
+      if (error.message.includes('row-level security')) {
+        return {
+          ok: false,
+          error:
+            mode === 'user'
+              ? 'RLS blocked the save. Run 0011_site_config_admin_write.sql in Supabase SQL Editor, or set a real service_role key in Vercel.'
+              : `Upsert failed: ${error.message}`,
+        };
+      }
       return { ok: false, error: `Upsert failed: ${error.message}` };
     }
 
     if (!data?.key) {
-      return { ok: false, error: 'Upsert returned no row — check site_config table.' };
+      return {
+        ok: false,
+        error: 'Upsert returned no row — check site_config table.',
+      };
     }
 
-    // Verify round-trip read
-    const { data: verify, error: verifyError } = await admin
+    const { data: verify, error: verifyError } = await client
       .from('site_config')
       .select('value')
       .eq('key', key)

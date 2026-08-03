@@ -40,11 +40,23 @@ export function getSupabaseKeyRole(key: string | null | undefined): string | nul
   }
 }
 
-export function isServiceRoleConfigured(): boolean {
-  const key = getServiceRoleKey();
-  if (!getSupabaseEnv() || !key) return false;
+/**
+ * True only when the key looks like a real service_role / secret key.
+ * Rejects anon JWTs and the new sb_publishable_ keys (those hit RLS and fail writes).
+ */
+export function isValidServiceRoleKey(key: string | null | undefined): boolean {
+  if (!key) return false;
+  if (key.startsWith('sb_publishable_')) return false;
+  if (key.startsWith('sb_secret_')) return true;
+
   const role = getSupabaseKeyRole(key);
-  // If we cannot decode, still allow (non-JWT local stubs); prefer real service_role
-  if (role && role !== 'service_role') return false;
-  return true;
+  if (role === 'service_role') return true;
+  if (role === 'anon' || role === 'authenticated') return false;
+
+  // Unknown format — do not treat as valid service role
+  return false;
+}
+
+export function isServiceRoleConfigured(): boolean {
+  return getSupabaseEnv() !== null && isValidServiceRoleKey(getServiceRoleKey());
 }

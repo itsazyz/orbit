@@ -4,6 +4,7 @@ import {
   getSupabaseEnv,
   getServiceRoleKey,
   getSupabaseKeyRole,
+  isValidServiceRoleKey,
 } from '@/lib/env';
 
 /**
@@ -30,10 +31,12 @@ export function createServiceRoleClient() {
     );
   }
 
-  const role = getSupabaseKeyRole(serviceRoleKey);
-  if (role && role !== 'service_role') {
+  if (!isValidServiceRoleKey(serviceRoleKey)) {
+    const role = getSupabaseKeyRole(serviceRoleKey);
     throw new Error(
-      `SUPABASE_SERVICE_ROLE_KEY has role "${role}", not "service_role". In Vercel, paste the service_role secret from Supabase → Settings → API (not the anon key).`
+      `SUPABASE_SERVICE_ROLE_KEY is invalid (detected role: ${role ?? 'publishable/unknown'}). ` +
+        'In Supabase → Project Settings → API, copy the service_role secret (or sb_secret_...), ' +
+        'NOT the anon / publishable key. Paste it in Vercel and Redeploy.'
     );
   }
 
