@@ -18,154 +18,229 @@ import type {
   SiteSettingsConfig,
   VisualPresetsConfig,
 } from '@/lib/site-config/types';
-import type { AdminStats } from '@/lib/admin/dashboard-data';
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+type ActionResult = { ok: true } | { ok: false; error: string };
 
-  if (!user?.email || !isAdminEmail(user.email)) {
-    throw new Error('Unauthorized');
+async function requireAdmin(): Promise<
+  { ok: true; email: string } | { ok: false; error: string }
+> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      return { ok: false, error: `Auth error: ${error.message}` };
+    }
+
+    if (!user?.email) {
+      return { ok: false, error: 'Not signed in. Please sign in again.' };
+    }
+
+    if (!isAdminEmail(user.email)) {
+      return { ok: false, error: 'Unauthorized: this account is not the admin.' };
+    }
+
+    return { ok: true, email: user.email };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Auth check failed',
+    };
   }
-
-  return user;
 }
 
-function revalidateSite() {
-  revalidatePath('/orbit-control');
+async function upsertSiteConfig(
+  key: string,
+  value: Record<string, unknown>
+): Promise<ActionResult> {
+  try {
+    const admin = createServiceRoleClient();
+    const payload = {
+      key,
+      value,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: existing, error: readError } = await admin
+      .from('site_config')
+      .select('key')
+      .eq('key', key)
+      .maybeSingle();
+
+    if (readError) {
+      return { ok: false, error: `Read site_config failed: ${readError.message}` };
+    }
+
+    if (existing) {
+      const { error } = await admin
+        .from('site_config')
+        .update({
+          value: payload.value,
+          updated_at: payload.updated_at,
+        })
+        .eq('key', key);
+
+      if (error) {
+        return { ok: false, error: `Update failed: ${error.message}` };
+      }
+    } else {
+      const { error } = await admin.from('site_config').insert({
+        key: payload.key,
+        value: payload.value,
+        updated_at: payload.updated_at,
+      });
+
+      if (error) {
+        return { ok: false, error: `Insert failed: ${error.message}` };
+      }
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Database write failed',
+    };
+  }
+}
+
+export async function saveVisualPresets(
+  presets: VisualPresetsConfig
+): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  const value = normalizeVisualPresets(presets) as unknown as Record<string, unknown>;
+  const result = await upsertSiteConfig(SITE_CONFIG_KEYS.visualPresets, value);
+  if (!result.ok) return result;
+
   revalidatePath('/create');
-  revalidatePath('/');
+  return { ok: true };
 }
 
-export async function getAdminStats(): Promise<AdminStats> {
-  const user = await requireAdmin();
-  const { loadAdminDashboard } = await import('@/lib/admin/dashboard-data');
-  const { stats } = await loadAdminDashboard(user.email);
-  return stats;
-}
+export async function saveHomepageContent(
+  content: HomepageContentConfig
+): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
 
-export async function saveVisualPresets(presets: VisualPresetsConfig) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
-  const value = normalizeVisualPresets(presets);
+  const value = normalizeHomepageContent(content) as unknown as Record<
+    string,
+    unknown
+  >;
+  const result = await upsertSiteConfig(SITE_CONFIG_KEYS.homepageContent, value);
+  if (!result.ok) return result;
 
-  const { error } = await admin.from('site_config').upsert(
-    {
-      key: SITE_CONFIG_KEYS.visualPresets,
-      value: value as unknown as Record<string, unknown>,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'key' }
-  );
-
-  if (error) throw new Error(`Visual presets save failed: ${error.message}`);
-  revalidateSite();
-  return { ok: true as const };
-}
-
-export async function saveHomepageContent(content: HomepageContentConfig) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
-  const value = normalizeHomepageContent(content);
-
-  const { error } = await admin.from('site_config').upsert(
-    {
-      key: SITE_CONFIG_KEYS.homepageContent,
-      value: value as unknown as Record<string, unknown>,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'key' }
-  );
-
-  if (error) throw new Error(`Homepage save failed: ${error.message}`);
-  revalidateSite();
-  return { ok: true as const };
-}
-
-export async function saveSiteSettings(settings: SiteSettingsConfig) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
-  const value = normalizeSiteSettings(settings);
-
-  const { error } = await admin.from('site_config').upsert(
-    {
-      key: SITE_CONFIG_KEYS.siteSettings,
-      value: value as unknown as Record<string, unknown>,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'key' }
-  );
-
-  if (error) {
-    throw new Error(`Site settings save failed: ${error.message}`);
-  }
-
-  revalidateSite();
-  return { ok: true as const };
-}
-
-export async function setPlanetPublished(profileId: string, isPublished: boolean) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
-
-  const { error } = await admin
-    .from('profiles')
-    .update({ is_published: isPublished })
-    .eq('id', profileId);
-
-  if (error) throw new Error(error.message);
-  revalidatePath('/orbit-control');
   revalidatePath('/');
   return { ok: true };
+}
+
+export async function saveSiteSettings(
+  settings: SiteSettingsConfig
+): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  const value = normalizeSiteSettings(settings) as unknown as Record<
+    string,
+    unknown
+  >;
+  const result = await upsertSiteConfig(SITE_CONFIG_KEYS.siteSettings, value);
+  if (!result.ok) return result;
+
+  // Refresh public homepage only — do NOT remount /orbit-control
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function setPlanetPublished(
+  profileId: string,
+  isPublished: boolean
+): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  try {
+    const admin = createServiceRoleClient();
+    const { error } = await admin
+      .from('profiles')
+      .update({ is_published: isPublished })
+      .eq('id', profileId);
+
+    if (error) return { ok: false, error: error.message };
+    revalidatePath('/');
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Update failed',
+    };
+  }
 }
 
 export async function setPlanetVisibility(
   profileId: string,
   visibility: 'public' | 'private'
-) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
+): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
 
-  const { error } = await admin
-    .from('profiles')
-    .update({ visibility })
-    .eq('id', profileId);
+  try {
+    const admin = createServiceRoleClient();
+    const { error } = await admin
+      .from('profiles')
+      .update({ visibility })
+      .eq('id', profileId);
 
-  if (error) throw new Error(error.message);
-  revalidatePath('/orbit-control');
-  return { ok: true };
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Update failed',
+    };
+  }
 }
 
-export async function deleteUserPlanet(profileId: string) {
-  await requireAdmin();
-  const admin = createServiceRoleClient();
+export async function deleteUserPlanet(profileId: string): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
 
-  const { error: starsError } = await admin.from('stars').delete().eq('profile_id', profileId);
-  if (starsError) throw new Error(starsError.message);
+  try {
+    const admin = createServiceRoleClient();
 
-  const { error: profileError } = await admin
-    .from('profiles')
-    .update({
-      is_published: false,
-      visibility: 'private',
-      bio: null,
-    })
-    .eq('id', profileId);
+    const { error: starsError } = await admin
+      .from('stars')
+      .delete()
+      .eq('profile_id', profileId);
+    if (starsError) return { ok: false, error: starsError.message };
 
-  if (profileError) throw new Error(profileError.message);
-  revalidatePath('/orbit-control');
-  return { ok: true };
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({
+        is_published: false,
+        visibility: 'private',
+        bio: null,
+      })
+      .eq('id', profileId);
+
+    if (profileError) return { ok: false, error: profileError.message };
+    revalidatePath('/');
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Reset failed',
+    };
+  }
 }
 
 export async function checkIsAdmin(): Promise<boolean> {
-  try {
-    await requireAdmin();
-    return true;
-  } catch {
-    return false;
-  }
+  const gate = await requireAdmin();
+  return gate.ok;
 }
 
 export { DEFAULT_VISUAL_PRESETS_CONFIG, DEFAULT_HOMEPAGE_CONTENT, DEFAULT_SITE_SETTINGS };

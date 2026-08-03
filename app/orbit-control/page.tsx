@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { isAdminEmail, getAdminEmail } from '@/lib/admin';
 import { loadAdminDashboard } from '@/lib/admin/dashboard-data';
-import { AdminPanel } from '@/components/admin/AdminPanel';
+import { AdminPanelClient } from '@/components/admin/AdminPanelClient';
 import {
   AdminAccessDeniedClient,
   AdminErrorScreenClient,
@@ -10,6 +10,7 @@ import {
 import { isServiceRoleConfigured, isSupabaseConfigured } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export default async function OrbitControlPage() {
   if (!isSupabaseConfigured()) {
@@ -57,7 +58,7 @@ export default async function OrbitControlPage() {
 
     return (
       <main className="min-h-svh bg-gradient-to-b from-[#0a0d16] to-[#05060a]">
-        <AdminPanel data={safeData} />
+        <AdminPanelClient data={safeData} />
       </main>
     );
   } catch (error) {

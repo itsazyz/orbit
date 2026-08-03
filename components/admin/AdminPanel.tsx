@@ -62,82 +62,83 @@ export function AdminPanel({ data }: AdminPanelProps) {
 
   function savePresets() {
     startTransition(async () => {
-      try {
-        await saveVisualPresets(presets);
-        notify(t('admin.messages.presetsSaved'));
-      } catch (e) {
-        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
+      const result = await saveVisualPresets(presets);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.saveFailed'));
+        return;
       }
+      notify(t('admin.messages.presetsSaved'));
     });
   }
 
   function saveHomepage() {
     startTransition(async () => {
-      try {
-        await saveHomepageContent(homepage);
-        notify(t('admin.messages.homepageSaved'));
-      } catch (e) {
-        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
+      const result = await saveHomepageContent(homepage);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.saveFailed'));
+        return;
       }
+      notify(t('admin.messages.homepageSaved'));
     });
   }
 
   function saveSettings() {
     startTransition(async () => {
-      try {
-        const payload: SiteSettingsConfig = {
-          maintenanceMode: !!settings.maintenanceMode,
-          maintenanceMessageEn: settings.maintenanceMessageEn ?? '',
-          maintenanceMessageAr: settings.maintenanceMessageAr ?? '',
-          allowSignups: !!settings.allowSignups,
-          showAnnouncement: !!settings.showAnnouncement,
-          announcementEn: settings.announcementEn ?? '',
-          announcementAr: settings.announcementAr ?? '',
-        };
-        await saveSiteSettings(payload);
-        setSettings(payload);
-        notify(t('admin.messages.settingsSaved'));
-      } catch (e) {
-        console.error('[admin] saveSiteSettings failed:', e);
-        notify(e instanceof Error ? e.message : t('admin.messages.saveFailed'));
+      const payload: SiteSettingsConfig = {
+        maintenanceMode: !!settings.maintenanceMode,
+        maintenanceMessageEn: String(settings.maintenanceMessageEn ?? ''),
+        maintenanceMessageAr: String(settings.maintenanceMessageAr ?? ''),
+        allowSignups: !!settings.allowSignups,
+        showAnnouncement: !!settings.showAnnouncement,
+        announcementEn: String(settings.announcementEn ?? ''),
+        announcementAr: String(settings.announcementAr ?? ''),
+      };
+
+      const result = await saveSiteSettings(payload);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.saveFailed'));
+        return;
       }
+
+      setSettings(payload);
+      notify(t('admin.messages.settingsSaved'));
     });
   }
 
   function togglePublish(profileId: string, next: boolean) {
     startTransition(async () => {
-      try {
-        await setPlanetPublished(profileId, next);
-        setPlanets((current) =>
-          current.map((planet) =>
-            planet.id === profileId ? { ...planet, isPublished: next } : planet
-          )
-        );
-        setUsers((current) =>
-          current.map((user) =>
-            user.id === profileId ? { ...user, isPublished: next } : user
-          )
-        );
-        notify(next ? t('admin.messages.planetPublished') : t('admin.messages.planetUnpublished'));
-      } catch (e) {
-        notify(e instanceof Error ? e.message : t('admin.messages.updateFailed'));
+      const result = await setPlanetPublished(profileId, next);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.updateFailed'));
+        return;
       }
+      setPlanets((current) =>
+        current.map((planet) =>
+          planet.id === profileId ? { ...planet, isPublished: next } : planet
+        )
+      );
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === profileId ? { ...user, isPublished: next } : user
+        )
+      );
+      notify(next ? t('admin.messages.planetPublished') : t('admin.messages.planetUnpublished'));
     });
   }
 
   function toggleVisibility(profileId: string, next: 'public' | 'private') {
     startTransition(async () => {
-      try {
-        await setPlanetVisibility(profileId, next);
-        setPlanets((current) =>
-          current.map((planet) =>
-            planet.id === profileId ? { ...planet, visibility: next } : planet
-          )
-        );
-        notify(interpolate(t('admin.messages.visibilitySet'), { value: next }));
-      } catch (e) {
-        notify(e instanceof Error ? e.message : t('admin.messages.updateFailed'));
+      const result = await setPlanetVisibility(profileId, next);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.updateFailed'));
+        return;
       }
+      setPlanets((current) =>
+        current.map((planet) =>
+          planet.id === profileId ? { ...planet, visibility: next } : planet
+        )
+      );
+      notify(interpolate(t('admin.messages.visibilitySet'), { value: next }));
     });
   }
 
@@ -145,26 +146,26 @@ export function AdminPanel({ data }: AdminPanelProps) {
     if (!confirm(t('admin.planets.confirmReset'))) return;
 
     startTransition(async () => {
-      try {
-        await deleteUserPlanet(profileId);
-        setPlanets((current) =>
-          current.map((planet) =>
-            planet.id === profileId
-              ? { ...planet, isPublished: false, visibility: 'private', starCount: 0 }
-              : planet
-          )
-        );
-        setUsers((current) =>
-          current.map((user) =>
-            user.id === profileId
-              ? { ...user, isPublished: false, starCount: 0 }
-              : user
-          )
-        );
-        notify(t('admin.messages.planetReset'));
-      } catch (e) {
-        notify(e instanceof Error ? e.message : t('admin.messages.resetFailed'));
+      const result = await deleteUserPlanet(profileId);
+      if (!result.ok) {
+        notify(result.error || t('admin.messages.resetFailed'));
+        return;
       }
+      setPlanets((current) =>
+        current.map((planet) =>
+          planet.id === profileId
+            ? { ...planet, isPublished: false, visibility: 'private', starCount: 0 }
+            : planet
+        )
+      );
+      setUsers((current) =>
+        current.map((user) =>
+          user.id === profileId
+            ? { ...user, isPublished: false, starCount: 0 }
+            : user
+        )
+      );
+      notify(t('admin.messages.planetReset'));
     });
   }
 
