@@ -129,13 +129,13 @@ export function getPlanetGradient(
     case 'cratered':
       return `radial-gradient(circle at 30% 30%, ${color} 0%, #3a2a20 45%, ${color}88 70%, #1a1008 100%)`;
     case 'banded':
-      return `repeating-linear-gradient(180deg, ${color} 0 12%, ${color}66 12% 22%, #1a1030 22% 30%, ${color}aa 30% 42%, ${color}44 42% 52%, ${color} 52% 100%)`;
+      return `linear-gradient(180deg, ${color} 0%, ${color}cc 18%, ${color}66 34%, ${color}ee 50%, ${color}55 66%, ${color}bb 82%, ${color} 100%)`;
     case 'striped':
-      return `repeating-linear-gradient(12deg, ${color} 0 8%, #0a0a14 8% 14%, ${color}cc 14% 22%, ${color}55 22% 28%)`;
+      return `linear-gradient(165deg, ${color}ee 0%, ${color}88 22%, ${color}dd 40%, ${color}55 58%, ${color}cc 76%, ${color}77 100%)`;
     case 'crystalline':
-      return `radial-gradient(circle at 50% 20%, #ffffff 0%, ${color} 35%, #6ecbff66 55%, ${color}44 80%)`;
+      return `radial-gradient(circle at 50% 20%, #ffffffcc 0%, ${color} 40%, ${color}88 70%, ${color}55 100%)`;
     case 'prism':
-      return `conic-gradient(from 40deg, #ff7eb3, ${color}, #7cffa8, #ffd56c, #6cd9ff, #ff7eb3)`;
+      return `radial-gradient(circle at 35% 30%, #ffb3d9aa 0%, ${color} 35%, #7cffa866 55%, #6cd9ff66 75%, ${color}88 100%)`;
     case 'oceanic':
       return `radial-gradient(circle at 40% 55%, #a8e6ff 0%, ${color} 35%, #0a3a55 65%, #021018 100%)`;
     case 'coral':
@@ -155,15 +155,15 @@ export function getPlanetGradient(
     case 'desert':
       return `radial-gradient(circle at 45% 30%, #ffe8a3 0%, #e0a96d 35%, #c4843a 60%, #5a3a18 100%)`;
     case 'neon':
-      return `radial-gradient(circle at 40% 35%, #ffffff 0%, ${color} 25%, #050510 55%, ${color} 56%, #050510 100%)`;
+      return `radial-gradient(circle at 40% 35%, #ffffffaa 0%, ${color} 40%, ${color}cc 65%, #0a0a18 100%)`;
     case 'marble':
-      return `radial-gradient(circle at 28% 22%, #ffffff 0%, #f0e8ff 25%, ${color}99 50%, #d8d0e8 80%)`;
+      return `radial-gradient(circle at 28% 22%, #ffffffdd 0%, ${color}bb 40%, ${color}88 70%, ${color}66 100%)`;
     case 'mosaic':
-      return `radial-gradient(circle at 40% 40%, ${color} 0%, #ff9d6c 40%, #7c8cff 70%, #1a1030 100%)`;
+      return `radial-gradient(circle at 35% 35%, ${color} 0%, ${color}cc 45%, ${color}88 75%, ${color}55 100%)`;
     case 'geometric':
-      return `radial-gradient(circle at 50% 50%, ${color}ee 0%, #1a2040 50%, ${color}66 80%)`;
+      return `radial-gradient(circle at 40% 30%, ${color}ee 0%, ${color}99 45%, ${color}66 80%)`;
     case 'cracked':
-      return `radial-gradient(circle at 45% 40%, ${color} 0%, #4a3020 40%, #1a1008 70%, #0a0604 100%)`;
+      return `radial-gradient(circle at 45% 40%, ${color}dd 0%, ${color}88 45%, ${color}55 75%, #1a1210 100%)`;
     case 'luminous':
       return `radial-gradient(circle at 40% 30%, #ffffff 0%, ${color} 25%, #ffffff88 45%, ${color} 70%)`;
     case 'shadowy':
