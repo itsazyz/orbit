@@ -201,13 +201,45 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
       </div>
 
       {selectedStar ? (
-        <div className="star-overlay" onClick={() => setSelectedStar(null)} role="presentation">
+        <div
+          className="star-overlay"
+          onClick={() => setSelectedStar(null)}
+          role="presentation"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+            /* Keep universe clearly visible — almost no dim / no heavy blur */
+            background: 'rgba(0, 0, 0, 0.08)',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+          }}
+        >
           <div
             className="star-modal"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="star-modal-title"
+            style={{
+              position: 'relative',
+              width: 'min(100%, 470px)',
+              maxHeight: '85svh',
+              overflowY: 'auto',
+              padding: '42px 28px 28px',
+              borderRadius: 28,
+              textAlign: 'center',
+              /* Nearly transparent panel so the world shows through */
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.22)',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.18)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
+            }}
           >
             <button
               type="button"
@@ -226,9 +258,25 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
             <h2 id="star-modal-title">{selectedStar.title}</h2>
 
             {selectedStar.content ? (
-              <p className="modal-content">{selectedStar.content}</p>
+              <p
+                className="modal-content"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                }}
+              >
+                {selectedStar.content}
+              </p>
             ) : (
-              <p className="modal-content empty">No content has been added to this star yet.</p>
+              <p
+                className="modal-content empty"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                }}
+              >
+                No content has been added to this star yet.
+              </p>
             )}
 
             <button type="button" className="back-button" onClick={() => setSelectedStar(null)}>
@@ -527,15 +575,6 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         }
 
         .star-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(1, 2, 8, 0.12);
-          backdrop-filter: blur(1.5px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          z-index: 100;
           animation: overlayIn 0.25s ease-out;
         }
 
@@ -549,17 +588,6 @@ export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) 
         }
 
         .star-modal {
-          position: relative;
-          width: min(100%, 470px);
-          max-height: 85svh;
-          overflow-y: auto;
-          padding: 42px 28px 28px;
-          border-radius: 28px;
-          text-align: center;
-          background: rgba(8, 10, 22, 0.14);
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          box-shadow: 0 16px 60px rgba(0, 0, 0, 0.22);
-          backdrop-filter: blur(8px);
           animation: modalRise 0.35s ease-out;
         }
 
