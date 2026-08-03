@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { getSupabaseEnv, getServiceRoleKey } from '@/lib/env';
+import {
+  getSupabaseEnv,
+  getServiceRoleKey,
+  getSupabaseKeyRole,
+} from '@/lib/env';
 
 /**
  * Privileged Supabase client (bypasses RLS).
@@ -23,6 +27,13 @@ export function createServiceRoleClient() {
   if (!serviceRoleKey) {
     throw new Error(
       'SUPABASE_SERVICE_ROLE_KEY is not configured. Add it in Vercel → Settings → Environment Variables.'
+    );
+  }
+
+  const role = getSupabaseKeyRole(serviceRoleKey);
+  if (role && role !== 'service_role') {
+    throw new Error(
+      `SUPABASE_SERVICE_ROLE_KEY has role "${role}", not "service_role". In Vercel, paste the service_role secret from Supabase → Settings → API (not the anon key).`
     );
   }
 

@@ -169,6 +169,39 @@ export async function saveSiteSettings(
   const result = await upsertSiteConfig(SITE_CONFIG_KEYS.siteSettings, value);
   if (!result.ok) return result;
 
+  // Confirm the public loader sees the same values
+  try {
+    const admin = createServiceRoleClient();
+    const { data } = await admin
+      .from('site_config')
+      .select('value')
+      .eq('key', SITE_CONFIG_KEYS.siteSettings)
+      .single();
+    const saved = normalizeSiteSettings(data?.value);
+    if (!saved.showAnnouncement) {
+      return {
+        ok: false,
+        error:
+          'Write did not stick (showAnnouncement is still false). Check SUPABASE_SERVICE_ROLE_KEY in Vercel.',
+      };
+    }
+    if (!saved.announcementEn && !saved.announcementAr) {
+      return {
+        ok: false,
+        error:
+          'Write did not stick (announcement text empty in DB). Check SUPABASE_SERVICE_ROLE_KEY in Vercel.',
+      };
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Could not verify saved settings',
+    };
+  }
+
   // Safe now: admin UI loads client-side and won't remount from this
   revalidatePath('/', 'layout');
   revalidatePath('/');

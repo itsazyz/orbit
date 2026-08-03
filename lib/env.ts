@@ -23,6 +23,28 @@ export function getServiceRoleKey(): string | null {
   return key || null;
 }
 
+/** Decode Supabase JWT payload (no verify) to inspect the role claim */
+export function getSupabaseKeyRole(key: string | null | undefined): string | null {
+  if (!key) return null;
+  try {
+    const segment = key.split('.')[1];
+    if (!segment) return null;
+    const json = Buffer.from(
+      segment.replace(/-/g, '+').replace(/_/g, '/'),
+      'base64'
+    ).toString('utf8');
+    const payload = JSON.parse(json) as { role?: string };
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function isServiceRoleConfigured(): boolean {
-  return getSupabaseEnv() !== null && getServiceRoleKey() !== null;
+  const key = getServiceRoleKey();
+  if (!getSupabaseEnv() || !key) return false;
+  const role = getSupabaseKeyRole(key);
+  // If we cannot decode, still allow (non-JWT local stubs); prefer real service_role
+  if (role && role !== 'service_role') return false;
+  return true;
 }
