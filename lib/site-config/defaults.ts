@@ -76,11 +76,8 @@ export const DEFAULT_VISUAL_PRESETS_CONFIG: VisualPresetsConfig = {
   planetMoods: DEFAULT_VISUAL_PRESETS.planetMoods,
 };
 
-function mergeRecords<T extends Record<string, unknown>>(
-  base: T,
-  patch: Partial<T> | undefined
-): T {
-  if (!patch) return base;
+function mergeRecords<T extends object>(base: T, patch: Partial<T> | undefined): T {
+  if (!patch || typeof patch !== 'object') return base;
   return { ...base, ...patch };
 }
 

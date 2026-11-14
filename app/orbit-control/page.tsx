@@ -42,7 +42,7 @@ export default async function OrbitControlPage() {
   }
 
   if (!isAdmin) {
-    return <AdminAccessDeniedClient userEmail={userEmail} adminConfigured />;
+    return <AdminAccessDeniedClient userEmail={userEmail ?? ""} adminConfigured />;
   }
 
   return <AdminGate />;
