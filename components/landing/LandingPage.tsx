@@ -29,7 +29,7 @@ const fadeUp = {
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-60px' },
   transition: { duration: 0.7, ease: 'easeOut' },
-};
+} as const;
 
 export function LandingPage({ homepage, stats, featured, signedIn }: LandingPageProps) {
   const { t, lang } = useLanguage();

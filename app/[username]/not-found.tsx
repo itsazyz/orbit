@@ -7,7 +7,7 @@ import { useLanguage } from '@/lib/i18n/context';
 
 export default function PlanetNotFound() {
   const { t } = useLanguage();
-  const params = useParams<{ username?: string }>();
+  const params = useParams<{ username: string }>();
   const wanted = (params?.username ?? '').toString().toLowerCase();
   const claimable = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(wanted);
 

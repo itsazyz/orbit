@@ -65,8 +65,9 @@ export default async function OpengraphImage({ params }: { params: { username: s
   });
 
   // Orbiting stars around the planet.
-  const orbiters = Array.from({ length: Math.min(Math.max(starCount, 5), 12) }, (_, i, arr) => {
-    const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 3;
+  const orbiterCount = Math.min(Math.max(starCount, 5), 12);
+  const orbiters = Array.from({ length: orbiterCount }, (_, i) => {
+    const angle = (i / orbiterCount) * Math.PI * 2 - Math.PI / 3;
     const radius = i % 2 === 0 ? 205 : 165;
     return { x: 300 + Math.cos(angle) * radius, y: 315 + Math.sin(angle) * radius * 0.92 };
   });
