@@ -157,7 +157,7 @@ export default async function OpengraphImage({ params }: { params: { username: s
               top: 315 - 38,
               width: 340,
               height: 76,
-              borderRadius: 9999,
+              borderRadius: '50%',
               border: `3px solid ${color}`,
               transform: 'rotate(-22deg)',
               opacity: 0.85,

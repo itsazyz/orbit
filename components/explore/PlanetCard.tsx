@@ -31,12 +31,12 @@ export function PlanetCard({ planet }: { planet: ExplorePlanetRow }) {
           animate={false}
         />
       </div>
-      <p className="relative mt-4 line-clamp-1 font-medium text-star">{planet.display_name}</p>
+      <p dir="auto" className="relative mt-4 line-clamp-1 font-medium text-star">{planet.display_name}</p>
       <p className="relative text-xs text-star-dim" dir="ltr">
         @{planet.username}
       </p>
       {planet.bio ? (
-        <p className="relative mt-3 line-clamp-2 text-sm leading-relaxed text-star-dim">{planet.bio}</p>
+        <p dir="auto" className="relative mt-3 line-clamp-2 text-sm leading-relaxed text-star-dim">{planet.bio}</p>
       ) : null}
       <p className="relative mt-4 text-[11px] uppercase tracking-[0.18em] text-star-dim/70">
         ✦ {t('explore.stars', { count: planet.star_count })}

@@ -138,7 +138,7 @@ export function OrbitStage({
             <>
               <span className="orbit-star-halo" style={{ background: color }} aria-hidden />
               <StarShape type={star.visualType} size={16} color={color} icon={star.icon} />
-              {showLabels ? <span className="orbit-star-label">{star.title}</span> : null}
+              {showLabels ? <span className="orbit-star-label" dir="auto">{star.title}</span> : null}
             </>
           );
           const starClass = cn('orbit-star', selectedId === star.id && 'is-selected');

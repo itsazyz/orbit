@@ -239,7 +239,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
       ) : null}
 
       {/* Orbit */}
-      <section className="relative z-10 mx-auto h-[min(68svh,640px)] min-h-[340px] w-full max-w-[720px]">
+      <section className="relative z-10 mx-auto h-[min(54svh,640px)] min-h-[320px] w-full max-w-[720px] sm:h-[min(66svh,640px)]">
         <OrbitStage
           planet={{
             color: profile.planet_color,
@@ -259,14 +259,14 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
 
       {/* Identity */}
       <section className="relative z-10 mx-auto -mt-4 max-w-xl px-6 pb-40 text-center">
-        <h1 className="text-balance text-3xl font-semibold tracking-tight drop-shadow-[0_6px_30px_rgba(0,0,0,0.6)] sm:text-4xl">
+        <h1 dir="auto" className="text-balance text-3xl font-semibold tracking-tight drop-shadow-[0_6px_30px_rgba(0,0,0,0.6)] sm:text-4xl">
           {name}
         </h1>
         <p className="mt-1.5 text-sm" style={{ color: profile.planet_color }} dir="ltr">
           @{profile.username}
         </p>
         {profile.bio ? (
-          <p className="mx-auto mt-4 max-w-md text-balance text-[15px] leading-relaxed text-white/70">
+          <p dir="auto" className="mx-auto mt-4 max-w-md text-balance text-[15px] leading-relaxed text-white/70">
             {profile.bio}
           </p>
         ) : null}
@@ -296,6 +296,12 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
           </nav>
         ) : null}
 
+        {stars.length > 0 ? (
+          <p className="mx-auto mt-7 w-fit rounded-full bg-white/[0.05] px-4 py-1.5 text-xs text-white/55">
+            ✦ {t('planet.tapHint', { name })}
+          </p>
+        ) : null}
+
         {stars.length === 0 ? (
           <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-6">
             <Sparkles className="mx-auto mb-3 opacity-70" size={22} />
@@ -307,11 +313,6 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
 
       {/* Bottom bar: hint + viral CTA (or owner tools) */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-3 px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
-        {stars.length > 0 && selected === null ? (
-          <p className="pointer-events-none rounded-full bg-black/30 px-4 py-1.5 text-xs text-white/60 backdrop-blur-md">
-            {t('planet.tapHint', { name })}
-          </p>
-        ) : null}
 
         {viewerIsOwner ? (
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/15 bg-[#07080f]/80 p-1.5 shadow-2xl backdrop-blur-xl">
@@ -334,7 +335,8 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             href={`/auth/sign-up?ref=${encodeURIComponent(profile.username)}`}
             className="pointer-events-auto group flex items-center gap-3 rounded-full border border-white/15 bg-[#07080f]/80 py-1.5 pe-1.5 ps-5 shadow-2xl backdrop-blur-xl transition hover:border-white/30"
           >
-            <span className="text-sm text-white/75">{t('planet.ctaTitle')}</span>
+            <span className="hidden text-sm text-white/75 min-[400px]:inline">{t('planet.ctaTitle')}</span>
+            <span className="text-sm font-medium tracking-[0.2em] text-white/80 min-[400px]:hidden">ORBIT</span>
             <span
               className="rounded-full px-4 py-2 text-sm font-medium text-white"
               style={{ background: profile.planet_color }}
@@ -357,7 +359,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             aria-modal="true"
             aria-labelledby="star-title"
             onClick={(e) => e.stopPropagation()}
-            className="animate-sheet-up relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-[#0b0d18]/85 p-6 pt-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8"
+            className="animate-sheet-up relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-[#0b0d18]/95 p-6 pt-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8"
           >
             <div
               className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full blur-3xl"
@@ -387,11 +389,11 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             <p className="relative text-[11px] uppercase tracking-[0.2em] text-white/50">
               {current.category ? t(`starKinds.${current.category}`) : t('planet.partOf', { name })}
             </p>
-            <h2 id="star-title" className="relative mt-2 text-balance text-2xl font-semibold sm:text-3xl">
+            <h2 id="star-title" dir="auto" className="relative mt-2 text-balance text-2xl font-semibold sm:text-3xl">
               {current.title}
             </h2>
             {current.content ? (
-              <p className="relative mt-4 whitespace-pre-wrap text-balance text-[15px] leading-relaxed text-white/80">
+              <p dir="auto" className="relative mt-4 whitespace-pre-wrap text-balance text-[15px] leading-relaxed text-white/80">
                 {current.content}
               </p>
             ) : null}
