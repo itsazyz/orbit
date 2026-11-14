@@ -1,12 +1,13 @@
-import { loadVisualPresetsServer } from '@/lib/site-config/load';
+import type { Metadata } from 'next';
 import { CreatePageClient } from './CreatePageClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CreatePage() {
-  const presets = await loadVisualPresetsServer();
+export const metadata: Metadata = {
+  title: 'Build your universe — ORBIT',
+  robots: { index: false },
+};
 
-  return (
-    <CreatePageClient initialStarTypes={presets.starTypes} />
-  );
+export default function CreatePage() {
+  return <CreatePageClient />;
 }

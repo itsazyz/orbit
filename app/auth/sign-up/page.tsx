@@ -13,9 +13,10 @@ import { useLanguage } from '@/lib/i18n/context';
 import { getAuthErrorKey } from '@/lib/auth/errors';
 
 export default function SignUpPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
 
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,6 +24,18 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [allowSignups, setAllowSignups] = useState(true);
   const [checkingSettings, setCheckingSettings] = useState(true);
+
+  // Remember a username picked from a "claim this orbit" link for the wizard.
+  useEffect(() => {
+    try {
+      const claim = new URLSearchParams(window.location.search).get('claim');
+      if (claim && /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(claim)) {
+        window.localStorage.setItem('orbit:claim', claim);
+      }
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     async function loadSettings() {
@@ -48,31 +61,39 @@ export default function SignUpPage() {
     setError('');
 
     if (!allowSignups) {
-      setError('New sign-ups are currently disabled.');
+      setError(t('auth.signupsClosed'));
+      return;
+    }
+
+    if (password.length < 8) {
+      setError(t('auth.passwordShort'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
-    const redirectBase =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ||
-      window.location.origin;
-
     const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${redirectBase}/auth/callback?next=${encodeURIComponent('/auth/verified')}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/create')}`,
+        data: {
+          display_name: displayName.trim().slice(0, 60) || undefined,
+          language: lang,
+        },
       },
     });
 
     if (authError) {
-      setError(t(getAuthErrorKey(authError.message)));
+      const disabled = /database error saving new user|sign-ups are currently disabled/i.test(
+        authError.message
+      );
+      setError(disabled ? t('auth.signupsClosed') : t(getAuthErrorKey(authError.message)));
       setLoading(false);
       return;
     }
@@ -96,7 +117,7 @@ export default function SignUpPage() {
   if (checkingSettings) {
     return (
       <div className="flex min-h-dvh items-center justify-center text-star-dim">
-        Loading…
+        {t('common.loading')}
       </div>
     );
   }
@@ -113,11 +134,19 @@ export default function SignUpPage() {
 
         {!allowSignups ? (
           <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            New registrations are temporarily closed. Please check back later.
+            {t('auth.signupsClosed')}
           </p>
         ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label={t('auth.nameLabel')}
+            placeholder={t('auth.namePlaceholder')}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            maxLength={60}
+            autoComplete="name"
+          />
           <Input
             label={t('auth.email')}
             type="email"

@@ -1,29 +1,25 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { isAdminEmail, getAdminEmail } from '@/lib/admin';
 import { AdminGate } from '@/components/admin/AdminGate';
 import {
   AdminAccessDeniedClient,
   AdminErrorScreenClient,
 } from '@/components/admin/AdminStatusScreens';
-import { isServiceRoleConfigured, isSupabaseConfigured } from '@/lib/env';
+import { isSupabaseConfigured } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Auth gate only — dashboard data loads client-side via AdminGate
- * so AdminPanel never participates in the Server Components render.
+ * Auth gate only. Admin rights live in Postgres (private.admins via
+ * public.is_admin()); the panel itself loads client-side through AdminGate.
  */
 export default async function OrbitControlPage() {
   if (!isSupabaseConfigured()) {
     return <AdminErrorScreenClient variant="supabase" />;
   }
 
-  if (!isServiceRoleConfigured()) {
-    return <AdminErrorScreenClient variant="service_role" />;
-  }
-
   let userEmail: string | null = null;
+  let isAdmin = false;
 
   try {
     const supabase = await createClient();
@@ -31,6 +27,11 @@ export default async function OrbitControlPage() {
       data: { user },
     } = await supabase.auth.getUser();
     userEmail = user?.email ?? null;
+
+    if (user) {
+      const { data } = await supabase.rpc('is_admin');
+      isAdmin = data === true;
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : undefined;
     return <AdminErrorScreenClient variant="session" detail={message} />;
@@ -40,13 +41,8 @@ export default async function OrbitControlPage() {
     redirect('/auth/sign-in?redirectTo=/orbit-control');
   }
 
-  if (!isAdminEmail(userEmail)) {
-    return (
-      <AdminAccessDeniedClient
-        userEmail={userEmail}
-        adminConfigured={Boolean(getAdminEmail())}
-      />
-    );
+  if (!isAdmin) {
+    return <AdminAccessDeniedClient userEmail={userEmail} adminConfigured />;
   }
 
   return <AdminGate />;

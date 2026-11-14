@@ -3,7 +3,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { createClient as createBrowserClient } from '@/lib/supabase/client';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { createServiceRoleClient } from '@/lib/supabase/service';
 import { SITE_CONFIG_KEYS } from './keys';
 import {
   DEFAULT_HOMEPAGE_CONTENT,
@@ -69,12 +68,6 @@ export async function loadVisualPresetsClient(): Promise<VisualPresetsConfig> {
   }
 }
 
-export async function loadVisualPresetsAdmin(): Promise<VisualPresetsConfig> {
-  const admin = createServiceRoleClient();
-  const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.visualPresets);
-  return normalizeVisualPresets(value);
-}
-
 export async function loadHomepageContentServer(): Promise<HomepageContentConfig> {
   try {
     const supabase = await createServerClient();
@@ -85,25 +78,8 @@ export async function loadHomepageContentServer(): Promise<HomepageContentConfig
   }
 }
 
-export async function loadHomepageContentAdmin(): Promise<HomepageContentConfig> {
-  const admin = createServiceRoleClient();
-  const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.homepageContent);
-  return normalizeHomepageContent(value);
-}
-
 export async function loadSiteSettingsServer(): Promise<SiteSettingsConfig> {
   noStore();
-
-  // Prefer service role so public pages always see admin-saved settings
-  // even if anon RLS/policies are misconfigured.
-  try {
-    const admin = createServiceRoleClient();
-    const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.siteSettings);
-    if (value != null) return normalizeSiteSettings(value);
-  } catch (error) {
-    console.error('[site-config] service-role settings read failed:', error);
-  }
-
   try {
     const supabase = await createServerClient();
     const value = await fetchConfigValue(supabase, SITE_CONFIG_KEYS.siteSettings);
@@ -113,8 +89,20 @@ export async function loadSiteSettingsServer(): Promise<SiteSettingsConfig> {
   }
 }
 
-export async function loadSiteSettingsAdmin(): Promise<SiteSettingsConfig> {
-  const admin = createServiceRoleClient();
-  const value = await fetchConfigValue(admin, SITE_CONFIG_KEYS.siteSettings);
-  return normalizeSiteSettings(value);
+/** All three CMS keys in one query (admin panel). */
+export async function loadAllSiteConfig(supabase: SupabaseClient<Database>): Promise<{
+  presets: VisualPresetsConfig;
+  homepage: HomepageContentConfig;
+  siteSettings: SiteSettingsConfig;
+}> {
+  const { data, error } = await supabase.from('site_config').select('key, value');
+  if (error) {
+    console.error('[site_config] bulk read failed:', error.message);
+  }
+  const byKey = new Map((data ?? []).map((row) => [row.key, row.value as unknown]));
+  return {
+    presets: normalizeVisualPresets(byKey.get(SITE_CONFIG_KEYS.visualPresets) ?? null),
+    homepage: normalizeHomepageContent(byKey.get(SITE_CONFIG_KEYS.homepageContent) ?? null),
+    siteSettings: normalizeSiteSettings(byKey.get(SITE_CONFIG_KEYS.siteSettings) ?? null),
+  };
 }

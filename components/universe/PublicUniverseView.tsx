@@ -1,725 +1,509 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type {
-  PlanetAtmosphere,
-  PlanetSurfaceStyle,
-  SpaceBackground,
-  UniverseMood,
-} from '@/types/database';
-import type { StarVisualType } from '@/lib/universe/visual-styles';
-import { PlanetRenderer, UniverseBackground } from '@/components/planet/PlanetRenderer';
+import Link from 'next/link';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Pencil,
+  Share2,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react';
+import { UniverseBackground } from '@/components/planet/PlanetRenderer';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
-import { StarShape } from '@/components/universe/StarShape';
-import { STAR_TYPE_COLORS } from '@/lib/universe/constants';
-import { Volume2, VolumeX } from 'lucide-react';
-
-export interface PublicStar {
-  id: string;
-  title: string;
-  content: string | null;
-  icon: string;
-  angle: number;
-  distance: number;
-  size: number;
-  visual_type?: StarVisualType | string;
-  orbit_speed?: number;
-  star_color?: string | null;
-}
-
-export interface PublicProfile {
-  id: string;
-  username: string;
-  display_name: string;
-  bio: string | null;
-  planet_color: string | null;
-  planet_surface_style?: PlanetSurfaceStyle;
-  planet_atmosphere?: PlanetAtmosphere;
-  planet_glow?: number;
-  planet_has_ring?: boolean;
-  universe_mood?: UniverseMood;
-  space_background?: SpaceBackground;
-  music_url?: string | null;
-  music_enabled?: boolean;
-  music_volume?: number;
-}
+import { OrbitStage } from '@/components/universe/OrbitStage';
+import { LinkIcon } from '@/components/links/LinkIcon';
+import { SharePanel } from '@/components/share/SharePanel';
+import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/lib/i18n/context';
+import { getLinkMeta, linkDisplayText } from '@/lib/links';
+import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
+import type { PublicPlanet } from '@/lib/planet/public';
+import { cn } from '@/lib/utils';
 
 interface PublicUniverseViewProps {
-  profile: PublicProfile;
-  stars: PublicStar[];
+  planet: PublicPlanet;
 }
 
-export function PublicUniverseView({ profile, stars }: PublicUniverseViewProps) {
-  const [selectedStar, setSelectedStar] = useState<PublicStar | null>(null);
-  const [time, setTime] = useState(0);
-  const [reducedMotion, setReducedMotion] = useState(false);
+function safeStorage(kind: 'local' | 'session') {
+  try {
+    return kind === 'local' ? window.localStorage : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
+  const { profile, viewerIsOwner, isLive } = planet;
+  const { t, dir } = useLanguage();
+  const supabase = useMemo(() => createClient(), []);
+
+  const [stars, setStars] = useState(planet.stars);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [resonated, setResonated] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState('');
   const [muted, setMuted] = useState(false);
+  const [musicStarted, setMusicStarted] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const planetColor = profile.planet_color || '#7c3aed';
-  const mood = profile.universe_mood ?? 'calm';
-  const spaceBg = profile.space_background ?? 'deep_space';
-
+  const name = profile.display_name || profile.username;
   const musicEnabled = profile.music_enabled && !!profile.music_url;
-  const musicVolume = profile.music_volume ?? 0.3;
 
+  // --- first publish: open the share sheet once ---
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    if (!viewerIsOwner) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('published') === '1') setCelebrate(true);
+  }, [viewerIsOwner]);
+
+  const closeCelebrate = useCallback(() => {
+    setCelebrate(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('published');
+    window.history.replaceState(null, '', url.pathname + url.search);
   }, []);
 
+  // --- visit counter (once per browser session, never for the owner) ---
   useEffect(() => {
-    if (reducedMotion) return;
-    let raf = 0;
-    const tick = (t: number) => {
-      setTime(t / 1000);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [reducedMotion]);
+    if (viewerIsOwner || !isLive) return;
+    const store = safeStorage('session');
+    const key = `orbit:viewed:${profile.username}`;
+    if (store?.getItem(key)) return;
+    store?.setItem(key, '1');
+    supabase.rpc('record_planet_view', { p_username: profile.username }).then(({ error }) => {
+      if (error) console.warn('[planet] view not recorded:', error.message);
+    });
+  }, [supabase, profile.username, viewerIsOwner, isLive]);
 
+  // --- remember which stars this browser already resonated with ---
   useEffect(() => {
-    if (!musicEnabled || !audioRef.current) return;
+    const store = safeStorage('local');
+    if (!store) return;
+    const map: Record<string, boolean> = {};
+    for (const star of planet.stars) {
+      if (store.getItem(`orbit:res:${star.id}`)) map[star.id] = true;
+    }
+    setResonated(map);
+  }, [planet.stars]);
+
+  // --- music: browsers block autoplay with sound, so start on first tap ---
+  useEffect(() => {
+    if (!musicEnabled) return;
     const audio = audioRef.current;
-    audio.volume = muted ? 0 : musicVolume;
-    const play = () => {
-      audio.play().catch(() => {
-        /* autoplay blocked until user interaction — mute button works as unlock */
-      });
+    if (!audio) return;
+    audio.volume = profile.music_volume ?? 0.3;
+
+    const start = () => {
+      audio
+        .play()
+        .then(() => setMusicStarted(true))
+        .catch(() => undefined);
     };
-    play();
-  }, [musicEnabled, musicVolume, muted]);
+    start();
+    window.addEventListener('pointerdown', start, { once: true });
+    return () => window.removeEventListener('pointerdown', start);
+  }, [musicEnabled, profile.music_volume]);
 
   const toggleMute = useCallback(() => {
-    setMuted((m) => {
-      const next = !m;
-      if (audioRef.current) {
-        audioRef.current.volume = next ? 0 : musicVolume;
-        if (!next) audioRef.current.play().catch(() => undefined);
-      }
-      return next;
-    });
-  }, [musicVolume]);
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (!musicStarted) {
+      audio.play().then(() => setMusicStarted(true)).catch(() => undefined);
+      return;
+    }
+    const next = !muted;
+    audio.muted = next;
+    setMuted(next);
+  }, [muted, musicStarted]);
 
-  const orbitingStars = useMemo(
-    () =>
-      stars.map((star) => {
-        const speed = star.orbit_speed ?? 1;
-        const angleDeg = reducedMotion
-          ? star.angle
-          : star.angle + time * speed * 12;
-        const rad = (angleDeg * Math.PI) / 180;
-        return {
-          ...star,
-          x: Math.cos(rad) * star.distance,
-          y: Math.sin(rad) * star.distance,
-        };
-      }),
-    [stars, time, reducedMotion]
+  const flash = useCallback((message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2200);
+  }, []);
+
+  const share = useCallback(async () => {
+    const url = `${window.location.origin}/${profile.username}`;
+    const shareData = { title: `${name} — ORBIT`, text: t('share.message'), url };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        /* cancelled → fall back to copy */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      flash(t('planet.copied'));
+    } catch {
+      flash(url);
+    }
+  }, [flash, name, profile.username, t]);
+
+  const resonate = useCallback(
+    async (starId: string) => {
+      if (resonated[starId] || viewerIsOwner) return;
+      setResonated((r) => ({ ...r, [starId]: true }));
+      setStars((list) =>
+        list.map((s) => (s.id === starId ? { ...s, resonance_count: s.resonance_count + 1 } : s))
+      );
+      safeStorage('local')?.setItem(`orbit:res:${starId}`, '1');
+      const { error } = await supabase.rpc('resonate_star', { p_star_id: starId });
+      if (error) console.warn('[planet] resonance failed:', error.message);
+    },
+    [resonated, supabase, viewerIsOwner]
   );
 
+  // --- keyboard navigation inside the star sheet ---
+  useEffect(() => {
+    if (selected === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null);
+      const forward = dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+      const backward = dir === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
+      if (e.key === forward) setSelected((i) => (i === null ? i : (i + 1) % stars.length));
+      if (e.key === backward)
+        setSelected((i) => (i === null ? i : (i - 1 + stars.length) % stars.length));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, stars.length, dir]);
+
+  const orbitStars = useMemo(
+    () =>
+      stars.map((s) => ({
+        id: s.id,
+        title: s.title,
+        icon: s.icon,
+        visualType: s.visual_type,
+      })),
+    [stars]
+  );
+
+  const current = selected !== null ? stars[selected] : null;
+  const PrevIcon = dir === 'rtl' ? ArrowRight : ArrowLeft;
+  const NextIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
+
   return (
-    <main className="universe-root">
-      <UniverseBackground mood={mood} spaceBackground={spaceBg} />
-      <StarsBackground seed={profile.username} count={90} />
-      <CosmicDust
-        seed={`${profile.username}-dust`}
-        count={32}
-        color={`${planetColor}66`}
-      />
-      <div className="universe-vignette" aria-hidden />
-
-      {musicEnabled ? (
-        <>
-          <audio ref={audioRef} src={profile.music_url!} loop preload="metadata" />
-          <button
-            type="button"
-            className="music-toggle"
-            onClick={toggleMute}
-            aria-label={muted ? 'Unmute music' : 'Mute music'}
-          >
-            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-          </button>
-        </>
-      ) : null}
-
-      <div className="universe-center">
-        <div className="universe-stage">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <div className="orbit orbit-three" />
-          <div className="orbit-glow" style={{ boxShadow: `0 0 120px ${planetColor}33` }} />
-
-          {orbitingStars.map((star) => (
-            <button
-              key={star.id}
-              type="button"
-              className="user-star"
-              style={{
-                left: `calc(50% + ${star.x}px)`,
-                top: `calc(50% + ${star.y}px)`,
-              }}
-              onClick={() => setSelectedStar(star)}
-              aria-label={star.title}
-            >
-            <span
-              className="star-pulse"
-              style={{
-                background:
-                  STAR_TYPE_COLORS[star.visual_type ?? 'sparkle'] ||
-                  star.star_color ||
-                  planetColor,
-              }}
-            />
-            <StarShape
-              type={star.visual_type ?? 'sparkle'}
-              size={Math.max(star.size || 12, 14)}
-              color={
-                STAR_TYPE_COLORS[star.visual_type ?? 'sparkle'] ||
-                star.star_color ||
-                '#ffffff'
-              }
-              icon={star.icon}
-            />
-              <span className="star-label">{star.title}</span>
-            </button>
-          ))}
-
-          <div className={`planet-wrap ${reducedMotion ? '' : 'planet-spin'}`}>
-            <PlanetRenderer
-              color={planetColor}
-              surfaceStyle={profile.planet_surface_style ?? 'smooth'}
-              atmosphere={profile.planet_atmosphere ?? 'thin'}
-              glow={profile.planet_glow ?? 4}
-              hasRing={profile.planet_has_ring ?? false}
-              mood={mood}
-              spaceBackground={spaceBg}
-              size={190}
-              animate
-              spin={!reducedMotion}
-            />
-          </div>
-        </div>
-
-        <div className="identity">
-          <h1>{profile.display_name || profile.username}</h1>
-          <p className="username">@{profile.username}</p>
-          {profile.bio ? <p className="bio">{profile.bio}</p> : null}
-        </div>
+    <main className="relative min-h-svh overflow-x-hidden text-white">
+      <div className="fixed inset-0 z-0">
+        <UniverseBackground mood={profile.universe_mood} spaceBackground={profile.space_background} />
+        <StarsBackground seed={profile.username} count={90} />
+        <CosmicDust seed={`${profile.username}-dust`} count={28} color={`${profile.planet_color}66`} />
       </div>
 
-      {selectedStar ? (
-        <div
-          className="star-overlay"
-          onClick={() => setSelectedStar(null)}
-          role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-            /* Keep universe clearly visible — almost no dim / no heavy blur */
-            background: 'rgba(0, 0, 0, 0.08)',
-            backdropFilter: 'none',
-            WebkitBackdropFilter: 'none',
-          }}
+      {musicEnabled ? (
+        <audio ref={audioRef} src={profile.music_url!} loop preload="none" />
+      ) : null}
+
+      {/* Top bar */}
+      <header className="relative z-20 flex items-center justify-between px-4 pt-4 sm:px-8 sm:pt-5">
+        <Link
+          href="/"
+          className="rounded-full px-3 py-2 text-sm font-medium tracking-[0.28em] text-white/80 hover:text-white"
         >
-          <div
-            className="star-modal"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="star-modal-title"
-            style={{
-              position: 'relative',
-              width: 'min(100%, 470px)',
-              maxHeight: '85svh',
-              overflowY: 'auto',
-              padding: '42px 28px 28px',
-              borderRadius: 28,
-              textAlign: 'center',
-              /* Nearly transparent panel so the world shows through */
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.22)',
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.18)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
-            }}
-          >
+          ORBIT
+        </Link>
+        <div className="flex items-center gap-2">
+          {musicEnabled ? (
             <button
               type="button"
-              className="close-button"
-              onClick={() => setSelectedStar(null)}
-              aria-label="Close"
+              onClick={toggleMute}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 backdrop-blur-md hover:bg-white/10"
+              aria-label={!musicStarted ? t('planet.playMusic') : muted ? t('planet.unmuteMusic') : t('planet.muteMusic')}
             >
-              ×
+              {!musicStarted || muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={share}
+            className="flex h-10 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 text-sm backdrop-blur-md hover:bg-white/10"
+          >
+            <Share2 size={16} />
+            <span className="hidden sm:inline">{t('planet.share')}</span>
+          </button>
+        </div>
+      </header>
+
+      {viewerIsOwner && !isLive ? (
+        <div className="relative z-20 mx-auto mt-3 w-fit max-w-[92%] rounded-full border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-center text-xs text-amber-100">
+          {t('planet.ownerPreview')}
+        </div>
+      ) : null}
+
+      {/* Orbit */}
+      <section className="relative z-10 mx-auto h-[min(68svh,640px)] min-h-[340px] w-full max-w-[720px]">
+        <OrbitStage
+          planet={{
+            color: profile.planet_color,
+            surfaceStyle: normalizePlanetSurface(profile.planet_surface_style),
+            atmosphere: profile.planet_atmosphere,
+            glow: profile.planet_glow,
+            hasRing: profile.planet_has_ring,
+            mood: profile.universe_mood,
+            spaceBackground: profile.space_background,
+          }}
+          stars={orbitStars}
+          onSelect={stars.length ? setSelected : undefined}
+          selectedId={current?.id ?? null}
+          paused={selected !== null}
+        />
+      </section>
+
+      {/* Identity */}
+      <section className="relative z-10 mx-auto -mt-4 max-w-xl px-6 pb-40 text-center">
+        <h1 className="text-balance text-3xl font-semibold tracking-tight drop-shadow-[0_6px_30px_rgba(0,0,0,0.6)] sm:text-4xl">
+          {name}
+        </h1>
+        <p className="mt-1.5 text-sm" style={{ color: profile.planet_color }} dir="ltr">
+          @{profile.username}
+        </p>
+        {profile.bio ? (
+          <p className="mx-auto mt-4 max-w-md text-balance text-[15px] leading-relaxed text-white/70">
+            {profile.bio}
+          </p>
+        ) : null}
+
+        {profile.links.length ? (
+          <nav aria-label={t('planet.links')} className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            {profile.links.map((link, i) => {
+              const meta = getLinkMeta(link.type);
+              return (
+                <a
+                  key={`${link.type}-${i}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="group flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-sm text-white/85 backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.12]"
+                  title={meta.label}
+                >
+                  <span style={{ color: meta.color }}>
+                    <LinkIcon type={link.type} size={16} />
+                  </span>
+                  <span className="max-w-[160px] truncate" dir="ltr">
+                    {linkDisplayText(link)}
+                  </span>
+                </a>
+              );
+            })}
+          </nav>
+        ) : null}
+
+        {stars.length === 0 ? (
+          <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+            <Sparkles className="mx-auto mb-3 opacity-70" size={22} />
+            <p className="font-medium">{t('planet.emptyTitle')}</p>
+            <p className="mt-1 text-sm text-white/60">{t('planet.emptyText')}</p>
+          </div>
+        ) : null}
+      </section>
+
+      {/* Bottom bar: hint + viral CTA (or owner tools) */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex flex-col items-center gap-3 px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+        {stars.length > 0 && selected === null ? (
+          <p className="pointer-events-none rounded-full bg-black/30 px-4 py-1.5 text-xs text-white/60 backdrop-blur-md">
+            {t('planet.tapHint', { name })}
+          </p>
+        ) : null}
+
+        {viewerIsOwner ? (
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/15 bg-[#07080f]/80 p-1.5 shadow-2xl backdrop-blur-xl">
+            <Link href="/create" className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm hover:bg-white/10">
+              <Pencil size={15} /> {t('planet.ownerEdit')}
+            </Link>
+            <Link href="/dashboard" className="rounded-full px-4 py-2.5 text-sm hover:bg-white/10">
+              {t('planet.ownerDashboard')}
+            </Link>
+            <button
+              type="button"
+              onClick={share}
+              className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black hover:bg-white/90"
+            >
+              <Share2 size={15} /> {t('planet.ownerShare')}
+            </button>
+          </div>
+        ) : (
+          <Link
+            href={`/auth/sign-up?ref=${encodeURIComponent(profile.username)}`}
+            className="pointer-events-auto group flex items-center gap-3 rounded-full border border-white/15 bg-[#07080f]/80 py-1.5 pe-1.5 ps-5 shadow-2xl backdrop-blur-xl transition hover:border-white/30"
+          >
+            <span className="text-sm text-white/75">{t('planet.ctaTitle')}</span>
+            <span
+              className="rounded-full px-4 py-2 text-sm font-medium text-white"
+              style={{ background: profile.planet_color }}
+            >
+              {t('planet.ctaButton')}
+            </span>
+          </Link>
+        )}
+      </div>
+
+      {/* Star sheet */}
+      {current ? (
+        <div
+          className="animate-fade-in fixed inset-0 z-40 flex items-end justify-center bg-black/35 p-3 sm:items-center sm:p-6"
+          onClick={() => setSelected(null)}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="star-title"
+            onClick={(e) => e.stopPropagation()}
+            className="animate-sheet-up relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-[#0b0d18]/85 p-6 pt-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8"
+          >
+            <div
+              className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full blur-3xl"
+              style={{ background: `${profile.planet_color}55` }}
+              aria-hidden
+            />
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="absolute end-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+              aria-label={t('planet.close')}
+            >
+              <X size={18} />
             </button>
 
-            <div className="modal-star" style={{ boxShadow: `0 0 50px ${planetColor}99` }}>
-              {selectedStar.icon || '✦'}
+            <div
+              className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl"
+              style={{
+                background: `radial-gradient(circle, #ffffff 0%, ${profile.planet_color} 45%, transparent 72%)`,
+                boxShadow: `0 0 50px ${profile.planet_color}88`,
+              }}
+              aria-hidden
+            >
+              {current.icon || '✦'}
             </div>
 
-            <p className="modal-eyebrow">A part of this universe</p>
-            <h2 id="star-modal-title">{selectedStar.title}</h2>
-
-            {selectedStar.content ? (
-              <p
-                className="modal-content"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                }}
-              >
-                {selectedStar.content}
+            <p className="relative text-[11px] uppercase tracking-[0.2em] text-white/50">
+              {current.category ? t(`starKinds.${current.category}`) : t('planet.partOf', { name })}
+            </p>
+            <h2 id="star-title" className="relative mt-2 text-balance text-2xl font-semibold sm:text-3xl">
+              {current.title}
+            </h2>
+            {current.content ? (
+              <p className="relative mt-4 whitespace-pre-wrap text-balance text-[15px] leading-relaxed text-white/80">
+                {current.content}
               </p>
-            ) : (
-              <p
-                className="modal-content empty"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                No content has been added to this star yet.
-              </p>
-            )}
+            ) : null}
 
-            <button type="button" className="back-button" onClick={() => setSelectedStar(null)}>
-              ← Back to orbit
-            </button>
+            {current.link_url ? (
+              <a
+                href={current.link_url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="relative mt-5 inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm hover:bg-white/10"
+              >
+                <ExternalLink size={15} /> {t('planet.openLink')}
+              </a>
+            ) : null}
+
+            <div className="relative mt-6 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelected((i) => (i === null ? i : (i - 1 + stars.length) % stars.length))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 hover:bg-white/10 disabled:opacity-30"
+                aria-label={t('planet.prev')}
+                disabled={stars.length < 2}
+              >
+                <PrevIcon size={18} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => resonate(current.id)}
+                disabled={viewerIsOwner || resonated[current.id]}
+                className={cn(
+                  'flex flex-1 flex-col items-center rounded-2xl border px-4 py-2.5 text-sm transition',
+                  resonated[current.id]
+                    ? 'border-transparent bg-white/10 text-white'
+                    : 'border-white/15 hover:bg-white/10',
+                  viewerIsOwner && 'cursor-default'
+                )}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <Sparkles size={15} style={{ color: profile.planet_color }} />
+                  {resonated[current.id] ? t('planet.resonated') : t('planet.resonate')}
+                </span>
+                {current.resonance_count > 0 ? (
+                  <span className="mt-0.5 text-[11px] text-white/50">
+                    {current.resonance_count === 1
+                      ? t('planet.resonanceOne')
+                      : t('planet.resonanceCount', { count: current.resonance_count })}
+                  </span>
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelected((i) => (i === null ? i : (i + 1) % stars.length))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 hover:bg-white/10 disabled:opacity-30"
+                aria-label={t('planet.next')}
+                disabled={stars.length < 2}
+              >
+                <NextIcon size={18} />
+              </button>
+            </div>
+
+            <p className="relative mt-4 text-[11px] text-white/35">
+              {(selected ?? 0) + 1} / {stars.length}
+            </p>
           </div>
         </div>
       ) : null}
 
-      {stars.length > 0 && !selectedStar ? (
-        <div className="hint">
-          Tap a star to discover something about {profile.display_name || 'this person'}
+      {celebrate ? (
+        <div
+          className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 backdrop-blur-sm sm:items-center"
+          onClick={closeCelebrate}
+          role="presentation"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            className="animate-sheet-up relative w-full max-w-lg rounded-[28px] border border-white/15 bg-[#0b0d18]/95 p-6 shadow-2xl sm:p-8"
+          >
+            <button
+              type="button"
+              onClick={closeCelebrate}
+              className="absolute end-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/70 hover:bg-white/10"
+              aria-label={t('planet.close')}
+            >
+              <X size={18} />
+            </button>
+            <p className="text-2xl font-semibold">{t('wizard.publishedTitle')}</p>
+            <p className="mt-1 text-sm text-white/60">{t('share.subtitle')}</p>
+            <SharePanel
+              className="mt-6"
+              url={typeof window !== 'undefined' ? `${window.location.origin}/${profile.username}` : `/${profile.username}`}
+              username={profile.username}
+              displayName={name}
+              bio={profile.bio}
+              planetColor={profile.planet_color}
+              hasRing={profile.planet_has_ring}
+              mood={profile.universe_mood}
+              starTitles={stars.map((s) => s.title)}
+            />
+            <p className="mt-5 text-center text-xs text-white/45">{t('share.bioTip')}</p>
+          </div>
         </div>
       ) : null}
 
-      {stars.length === 0 ? (
-        <div className="no-stars">
-          <span>✦</span>
-          <p>This universe is still being created.</p>
+      {toast ? (
+        <div className="animate-fade-in fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm font-medium text-black shadow-xl">
+          {toast}
         </div>
       ) : null}
-
-      <style jsx>{`
-        .universe-root {
-          position: relative;
-          min-height: 100svh;
-          width: 100%;
-          overflow: hidden;
-          color: white;
-          isolation: isolate;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: universeEnter 1.1s ease-out both;
-        }
-
-        .universe-center {
-          position: relative;
-          z-index: 2;
-          width: min(100vw, 1100px);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        @keyframes universeEnter {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        .universe-vignette {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          background: radial-gradient(
-            ellipse at center,
-            transparent 35%,
-            rgba(0, 0, 0, 0.45) 100%
-          );
-        }
-
-        .music-toggle {
-          position: fixed;
-          top: 64px;
-          right: 20px;
-          z-index: 50;
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(255, 255, 255, 0.08);
-          color: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          backdrop-filter: blur(12px);
-        }
-
-        .universe-stage {
-          position: relative;
-          width: 100%;
-          height: min(72svh, 720px);
-          min-height: 480px;
-        }
-
-        .orbit {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          border: 1px dashed rgba(255, 255, 255, 0.09);
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-        }
-
-        .orbit-glow {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          width: 220px;
-          height: 220px;
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-          z-index: 3;
-        }
-
-        .orbit-one {
-          width: 330px;
-          height: 330px;
-          animation: orbitRotate 25s linear infinite, orbitBreath 7s ease-in-out infinite;
-        }
-
-        .orbit-two {
-          width: 520px;
-          height: 520px;
-          animation: orbitRotate 38s linear infinite reverse, orbitBreath 9s ease-in-out infinite;
-        }
-
-        .orbit-three {
-          width: 730px;
-          height: 730px;
-          opacity: 0.7;
-          animation: orbitRotate 55s linear infinite, orbitBreath 12s ease-in-out infinite;
-        }
-
-        @keyframes orbitBreath {
-          0%,
-          100% {
-            border-color: rgba(255, 255, 255, 0.06);
-          }
-          50% {
-            border-color: rgba(255, 255, 255, 0.16);
-          }
-        }
-
-        @keyframes orbitRotate {
-          from {
-            transform: translate(-50%, -50%) rotate(0deg);
-          }
-          to {
-            transform: translate(-50%, -50%) rotate(360deg);
-          }
-        }
-
-        .planet-wrap {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 5;
-        }
-
-        .planet-spin {
-          animation: planetSelfRotate 48s linear infinite;
-        }
-
-        @keyframes planetSelfRotate {
-          from {
-            transform: translate(-50%, -50%) rotate(0deg);
-          }
-          to {
-            transform: translate(-50%, -50%) rotate(360deg);
-          }
-        }
-
-        .user-star {
-          position: absolute;
-          transform: translate(-50%, -50%);
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          z-index: 8;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          transition: transform 0.25s ease;
-        }
-
-        .user-star:hover,
-        .user-star:focus-visible {
-          transform: translate(-50%, -50%) scale(1.15);
-        }
-
-        .star-pulse {
-          position: absolute;
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          opacity: 0.22;
-          filter: blur(6px);
-          animation: starPulse 3.2s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        @keyframes starPulse {
-          0%,
-          100% {
-            transform: scale(0.85);
-            opacity: 0.15;
-          }
-          50% {
-            transform: scale(1.35);
-            opacity: 0.35;
-          }
-        }
-
-        .star-shape {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .star-label {
-          position: absolute;
-          top: calc(100% + 9px);
-          white-space: nowrap;
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.65);
-          opacity: 0;
-          transform: translateY(-4px);
-          transition: all 0.25s ease;
-          pointer-events: none;
-        }
-
-        .user-star:hover .star-label,
-        .user-star:focus .star-label {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .identity {
-          position: relative;
-          z-index: 10;
-          width: min(90%, 420px);
-          margin: -72px auto 0;
-          padding: 0 16px 24px;
-          text-align: center;
-          pointer-events: none;
-        }
-
-        .identity h1 {
-          margin: 0;
-          font-size: clamp(25px, 5vw, 38px);
-          font-weight: 700;
-          text-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
-          letter-spacing: -0.02em;
-        }
-
-        .username {
-          margin: 7px 0 0;
-          color: #a78bfa;
-          font-size: 14px;
-        }
-
-        .bio {
-          margin: 13px auto 0;
-          color: #9da6c2;
-          line-height: 1.6;
-          font-size: 14px;
-          max-width: 350px;
-        }
-
-        .hint {
-          position: fixed;
-          left: 50%;
-          bottom: 25px;
-          transform: translateX(-50%);
-          padding: 10px 16px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          backdrop-filter: blur(15px);
-          color: #aeb6cf;
-          font-size: 12px;
-          z-index: 20;
-        }
-
-        .no-stars {
-          position: fixed;
-          left: 50%;
-          bottom: 30px;
-          transform: translateX(-50%);
-          text-align: center;
-          color: #7d86a2;
-          font-size: 12px;
-          z-index: 20;
-        }
-
-        .star-overlay {
-          animation: overlayIn 0.25s ease-out;
-        }
-
-        @keyframes overlayIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        .star-modal {
-          animation: modalRise 0.35s ease-out;
-        }
-
-        @keyframes modalRise {
-          from {
-            opacity: 0;
-            transform: translateY(18px) scale(0.97);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .close-button {
-          position: absolute;
-          right: 16px;
-          top: 14px;
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
-          font-size: 24px;
-          cursor: pointer;
-        }
-
-        .modal-star {
-          width: 58px;
-          height: 58px;
-          margin: 0 auto 20px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 28px;
-          color: white;
-          background: radial-gradient(circle, white 0%, #a78bfa 30%, #7c3aed 70%, transparent 72%);
-        }
-
-        .modal-eyebrow {
-          margin: 0 0 9px;
-          color: #a78bfa;
-          font-size: 12px;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          text-shadow: 0 1px 10px rgba(0, 0, 0, 0.55);
-        }
-
-        .star-modal h2 {
-          margin: 0;
-          font-size: clamp(27px, 7vw, 38px);
-          text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
-        }
-
-        .modal-content {
-          margin: 20px auto 0;
-          color: #f8fafc;
-          line-height: 1.8;
-          font-size: 15px;
-          white-space: pre-wrap;
-          padding: 16px 18px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
-        }
-
-        .modal-content.empty {
-          color: #cbd5e1;
-        }
-
-        .back-button {
-          margin-top: 28px;
-          padding: 13px 20px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 12px;
-          background: rgba(255, 255, 255, 0.08);
-          color: white;
-          cursor: pointer;
-          font-size: 14px;
-          text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
-        }
-
-        @media (max-width: 600px) {
-          .orbit-one {
-            width: 230px;
-            height: 230px;
-          }
-          .orbit-two {
-            width: 360px;
-            height: 360px;
-          }
-          .orbit-three {
-            width: 500px;
-            height: 500px;
-          }
-          .identity {
-            margin-top: -48px;
-          }
-          .star-label {
-            display: none;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .orbit-one,
-          .orbit-two,
-          .orbit-three,
-          .planet-spin,
-          .star-pulse,
-          .universe-root,
-          .star-overlay,
-          .star-modal {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </main>
   );
 }

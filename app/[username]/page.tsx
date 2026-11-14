@@ -1,93 +1,54 @@
-"use client";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { PublicUniverseView } from '@/components/universe/PublicUniverseView';
+import { getPublicPlanet } from '@/lib/planet/public';
+import { getSiteUrl } from '@/lib/utils';
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { PublicUniverseView } from "@/components/universe/PublicUniverseView";
-import type { PublicProfile, PublicStar } from "@/components/universe/PublicUniverseView";
+export const dynamic = 'force-dynamic';
 
-export default function UserPlanetPage() {
-  const params = useParams();
-  const username = String(params.username);
+interface PageProps {
+  params: { username: string };
+}
 
-  const supabase = useMemo(() => createClient(), []);
-
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [stars, setStars] = useState<PublicStar[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    async function loadPlanet() {
-      setLoading(true);
-      setError(false);
-
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select(
-            "id, username, display_name, bio, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_url, music_enabled, music_volume"
-          )
-          .eq("username", username)
-          .eq("is_published", true)
-          .eq("visibility", "public")
-          .maybeSingle();
-
-        if (profileError || !profileData) {
-          setError(true);
-          setLoading(false);
-          return;
-        }
-
-        setProfile(profileData as PublicProfile);
-
-        const { data: starsData, error: starsError } = await supabase
-          .from("stars")
-          .select(
-            "id, title, content, icon, angle, distance, size, visual_type, orbit_speed, star_color"
-          )
-          .eq("profile_id", profileData.id)
-          .order("sort_order", { ascending: true });
-
-        if (starsError) {
-          setStars([]);
-        } else {
-          setStars((starsData as PublicStar[]) || []);
-        }
-      } catch {
-        setError(true);
-      }
-
-      setLoading(false);
-    }
-
-    loadPlanet();
-  }, [supabase, username]);
-
-  if (loading) {
-    return (
-      <main className="flex min-h-svh items-center justify-center bg-[#020308] text-[#9da6c2]">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border border-white/15 border-t-violet-500" />
-          <p>Entering orbit...</p>
-        </div>
-      </main>
-    );
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const planet = await getPublicPlanet(params.username);
+  if (!planet) {
+    return { title: 'ORBIT', robots: { index: false } };
   }
 
-  if (error || !profile) {
-    return (
-      <main className="flex min-h-svh items-center justify-center bg-[#020308] px-6 text-center text-white">
-        <div>
-          <div className="mb-4 text-5xl opacity-80">✦</div>
-          <h1 className="text-4xl font-semibold">Planet not found</h1>
-          <p className="mx-auto mt-3 max-w-sm text-[#929bb6]">
-            This orbit doesn&apos;t exist, or the planet hasn&apos;t been created yet.
-          </p>
-        </div>
-      </main>
-    );
-  }
+  const { profile, stars, isLive } = planet;
+  const name = profile.display_name || profile.username;
+  const title = `${name} (@${profile.username}) — ORBIT`;
+  const starTitles = stars.slice(0, 4).map((s) => s.title).join(' · ');
+  const description =
+    profile.bio?.trim() ||
+    (starTitles ? `${starTitles} — ${name}'s universe on ORBIT.` : `${name}'s universe on ORBIT.`);
+  const url = `${getSiteUrl()}/${profile.username}`;
 
-  return <PublicUniverseView profile={profile} stars={stars} />;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    robots: isLive ? undefined : { index: false, follow: false },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'profile',
+      siteName: 'ORBIT',
+      username: profile.username,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  };
+}
+
+export default async function UserPlanetPage({ params }: PageProps) {
+  const planet = await getPublicPlanet(params.username);
+  if (!planet) notFound();
+
+  return <PublicUniverseView planet={planet} />;
 }

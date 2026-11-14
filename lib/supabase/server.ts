@@ -3,8 +3,6 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 import { getSupabaseEnv } from '@/lib/env';
 
-export { createServiceRoleClient } from '@/lib/supabase/service';
-
 function requireSupabaseEnv() {
   const env = getSupabaseEnv();
 

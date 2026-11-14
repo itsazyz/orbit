@@ -69,6 +69,7 @@ export interface AdminUserRow {
   visibility: string;
   starCount: number;
   createdAt: string;
+  lastSignInAt?: string | null;
 }
 
 export interface AdminPlanetRow {
@@ -80,6 +81,7 @@ export interface AdminPlanetRow {
   planetColor: string;
   starCount: number;
   musicEnabled: boolean;
+  views?: number;
   createdAt: string;
   updatedAt: string;
 }

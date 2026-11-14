@@ -1,259 +1,143 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
+import type {
+  Database,
+  PlanetAtmosphere,
+  ProfileLink,
+  SpaceBackground,
+  UniverseMood,
+} from '@/types/database';
+import { parseProfileLinks } from '@/lib/links';
+import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
 
-export interface UserPlanetSummary {
-  id: string;
-  username: string;
-  display_name: string;
-  bio: string | null;
-  planet_color: string;
-  planet_surface_style: string;
-  music_enabled: boolean;
-  music_url: string | null;
-  music_volume: number;
-  is_published: boolean;
-  starCount: number;
+/** A real username was chosen (not the placeholder created at sign-up). */
+export function hasClaimedUsername(username: string | null | undefined): boolean {
+  return !!username && !username.startsWith('user-');
 }
 
-/** True when the user finished the creation flow at least once. */
 export function hasPublishedPlanet(
-  profile: Pick<UserPlanetSummary, 'is_published' | 'username'> | null | undefined
+  profile: { is_published: boolean; username: string } | null | undefined
 ): boolean {
-  if (!profile?.is_published) return false;
-  return !profile.username.startsWith('user-');
-}
-
-/** Minimal profile read — safe even when optional columns are missing in DB. */
-async function fetchProfileRouting(
-  supabase: SupabaseClient<Database>,
-  userId: string
-): Promise<{ username: string; is_published: boolean } | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('username, is_published')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error('[profile] routing query failed:', error.message);
-    return null;
-  }
-
-  return data;
-}
-
-export async function fetchUserPlanetSummary(
-  supabase: SupabaseClient<Database>
-): Promise<UserPlanetSummary | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select(
-      'id, username, display_name, bio, planet_color, planet_surface_style, music_enabled, music_url, music_volume, is_published'
-    )
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (error) {
-    const routing = await fetchProfileRouting(supabase, user.id);
-    if (!routing) return null;
-
-    return {
-      id: user.id,
-      username: routing.username,
-      display_name: routing.username,
-      bio: null,
-      planet_color: '#7c8cff',
-      planet_surface_style: 'smooth',
-      music_enabled: false,
-      music_url: null,
-      music_volume: 0.3,
-      is_published: routing.is_published,
-      starCount: 0,
-    };
-  }
-
-  if (!profile) return null;
-
-  const { count } = await supabase
-    .from('stars')
-    .select('id', { count: 'exact', head: true })
-    .eq('profile_id', user.id);
-
-  return {
-    ...profile,
-    starCount: count ?? 0,
-  };
+  return !!profile?.is_published && hasClaimedUsername(profile.username);
 }
 
 /** Where to send the user right after sign-in / email verification. */
-export async function getPostAuthPath(
-  supabase: SupabaseClient<Database>
-): Promise<string> {
+export async function getPostAuthPath(supabase: SupabaseClient<Database>): Promise<string> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return '/auth/sign-in';
 
-  const profile = await fetchProfileRouting(supabase, user.id);
+  const { data } = await supabase
+    .from('profiles')
+    .select('username, is_published')
+    .eq('id', user.id)
+    .maybeSingle();
 
-  if (profile && hasPublishedPlanet(profile)) {
-    return '/dashboard';
-  }
-
-  return '/auth/verified';
+  return data && hasClaimedUsername(data.username) ? '/dashboard' : '/create';
 }
 
-export interface LoadedPlanetEditorData {
-  profile: {
-    display_name: string;
-    username: string;
-    bio: string;
-    planet_color: string;
-    planet_surface_style: string;
-    planet_atmosphere: string;
-    planet_glow: number;
-    planet_has_ring: boolean;
-    universe_mood: string;
-    space_background: string;
-    music_enabled: boolean;
-    music_url: string;
-    music_volume: number;
-  };
-  stars: Array<{
-    id: string;
-    title: string;
-    content: string;
-    icon: string;
-    visualType: string;
-  }>;
+export interface EditorStar {
+  id: string;
+  title: string;
+  content: string;
+  icon: string;
+  visualType: string;
+  category: string | null;
+  linkUrl: string;
+}
+
+export interface EditorState {
+  displayName: string;
+  username: string;
+  bio: string;
+  planetColor: string;
+  planetSurface: string;
+  atmosphere: PlanetAtmosphere;
+  glow: number;
+  hasRing: boolean;
+  mood: UniverseMood;
+  spaceBackground: SpaceBackground;
+  musicEnabled: boolean;
+  musicUrl: string;
+  links: ProfileLink[];
+  stars: EditorStar[];
+}
+
+export const EMPTY_EDITOR_STATE: EditorState = {
+  displayName: '',
+  username: '',
+  bio: '',
+  planetColor: '#7c8cff',
+  planetSurface: 'smooth',
+  atmosphere: 'thin',
+  glow: 3,
+  hasRing: true,
+  mood: 'calm',
+  spaceBackground: 'deep_space',
+  musicEnabled: false,
+  musicUrl: '',
+  links: [],
+  stars: [],
+};
+
+export interface LoadedEditor {
+  userId: string;
+  state: EditorState;
+  /** The planet was published before (editing vs. first publish) */
+  isEditing: boolean;
 }
 
 export async function loadPlanetForEditor(
   supabase: SupabaseClient<Database>
-): Promise<LoadedPlanetEditorData | null> {
+): Promise<LoadedEditor | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return null;
 
-  const routing = await fetchProfileRouting(supabase, user.id);
-  if (!routing || !hasPublishedPlanet(routing)) return null;
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select(
-      'display_name, username, bio, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_enabled, music_url, music_volume, is_published'
-    )
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const safeProfile = profile ?? {
-    display_name: routing.username,
-    username: routing.username,
-    bio: null,
-    planet_color: '#7C3AED',
-    planet_surface_style: 'smooth',
-    planet_atmosphere: 'thin',
-    planet_glow: 3,
-    planet_has_ring: false,
-    universe_mood: 'calm',
-    space_background: 'deep_space',
-    music_enabled: false,
-    music_url: null,
-    music_volume: 0.3,
-    is_published: routing.is_published,
-  };
-
-  if (profileError && !profile) {
-    console.error('[profile] editor load failed:', profileError.message);
-  }
-
-  const { data: starsData, error: starsError } = await supabase
-    .from('stars')
-    .select('id, title, content, icon, visual_type')
-    .eq('profile_id', user.id)
-    .order('sort_order', { ascending: true });
-
-  if (starsError) {
-    const { data: basicStars } = await supabase
+  const [{ data: profile, error }, { data: stars }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
       .from('stars')
-      .select('id, title, content, icon')
+      .select('id, title, content, icon, visual_type, category, link_url')
       .eq('profile_id', user.id)
-      .order('sort_order', { ascending: true });
+      .order('sort_order', { ascending: true }),
+  ]);
 
-    return {
-      profile: {
-        display_name: safeProfile.display_name,
-        username: safeProfile.username,
-        bio: safeProfile.bio ?? '',
-        planet_color: safeProfile.planet_color ?? '#7C3AED',
-        planet_surface_style: safeProfile.planet_surface_style ?? 'smooth',
-        planet_atmosphere:
-          ('planet_atmosphere' in safeProfile && safeProfile.planet_atmosphere) ||
-          'thin',
-        planet_glow:
-          ('planet_glow' in safeProfile && typeof safeProfile.planet_glow === 'number'
-            ? safeProfile.planet_glow
-            : 3),
-        planet_has_ring:
-          ('planet_has_ring' in safeProfile && !!safeProfile.planet_has_ring) || false,
-        universe_mood:
-          ('universe_mood' in safeProfile && safeProfile.universe_mood) || 'calm',
-        space_background:
-          ('space_background' in safeProfile && safeProfile.space_background) ||
-          'deep_space',
-        music_enabled: safeProfile.music_enabled ?? false,
-        music_url: safeProfile.music_url ?? '',
-        music_volume: safeProfile.music_volume ?? 0.3,
-      },
-      stars: (basicStars ?? []).map((star) => ({
-        id: star.id,
-        title: star.title,
-        content: star.content ?? '',
-        icon: star.icon,
-        visualType: 'sparkle',
-      })),
-    };
-  }
+  if (error) console.error('[editor] profile load failed:', error.message);
+  if (!profile) return { userId: user.id, state: EMPTY_EDITOR_STATE, isEditing: false };
+
+  const claimed = hasClaimedUsername(profile.username);
+  const metaName = (user.user_metadata?.display_name as string | undefined)?.trim() ?? '';
+  const displayName =
+    profile.display_name && profile.display_name !== 'New Explorer' ? profile.display_name : metaName;
 
   return {
-    profile: {
-      display_name: safeProfile.display_name,
-      username: safeProfile.username,
-      bio: safeProfile.bio ?? '',
-      planet_color: safeProfile.planet_color ?? '#7C3AED',
-      planet_surface_style: safeProfile.planet_surface_style ?? 'smooth',
-      planet_atmosphere:
-        ('planet_atmosphere' in safeProfile && safeProfile.planet_atmosphere) || 'thin',
-      planet_glow:
-        'planet_glow' in safeProfile && typeof safeProfile.planet_glow === 'number'
-          ? safeProfile.planet_glow
-          : 3,
-      planet_has_ring:
-        ('planet_has_ring' in safeProfile && !!safeProfile.planet_has_ring) || false,
-      universe_mood:
-        ('universe_mood' in safeProfile && safeProfile.universe_mood) || 'calm',
-      space_background:
-        ('space_background' in safeProfile && safeProfile.space_background) ||
-        'deep_space',
-      music_enabled: safeProfile.music_enabled ?? false,
-      music_url: safeProfile.music_url ?? '',
-      music_volume: safeProfile.music_volume ?? 0.3,
+    userId: user.id,
+    isEditing: claimed && (profile.is_published || (stars?.length ?? 0) > 0),
+    state: {
+      displayName,
+      username: claimed ? profile.username : '',
+      bio: profile.bio ?? '',
+      planetColor: profile.planet_color,
+      planetSurface: normalizePlanetSurface(profile.planet_surface_style),
+      atmosphere: profile.planet_atmosphere,
+      glow: profile.planet_glow,
+      hasRing: profile.planet_has_ring,
+      mood: profile.universe_mood,
+      spaceBackground: profile.space_background,
+      musicEnabled: profile.music_enabled,
+      musicUrl: profile.music_url ?? '',
+      links: parseProfileLinks(profile.links),
+      stars: (stars ?? []).map((s) => ({
+        id: s.id,
+        title: s.title,
+        content: s.content ?? '',
+        icon: s.icon,
+        visualType: s.visual_type,
+        category: s.category,
+        linkUrl: s.link_url ?? '',
+      })),
     },
-    stars: (starsData ?? []).map((star) => ({
-      id: star.id,
-      title: star.title,
-      content: star.content ?? '',
-      icon: star.icon,
-      visualType: star.visual_type ?? 'sparkle',
-    })),
   };
 }

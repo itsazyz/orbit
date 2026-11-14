@@ -53,8 +53,8 @@ export function AdminGate() {
           <p className="mt-3 break-words text-sm text-rose-300/90">{error}</p>
           <p className="mt-4 text-xs text-slate-500">
             {lang === 'ar'
-              ? 'شغّل 0009_ensure_site_settings.sql في Supabase إن لزم، وتأكد من SUPABASE_SERVICE_ROLE_KEY.'
-              : 'Run 0009_ensure_site_settings.sql in Supabase if needed, and check SUPABASE_SERVICE_ROLE_KEY.'}
+              ? 'تأكد أن بريدك مضاف في جدول private.admins وأن الـ migration الأساسي مطبّق.'
+              : 'Make sure your email is in private.admins and the baseline migration has been applied.'}
           </p>
           <button
             type="button"

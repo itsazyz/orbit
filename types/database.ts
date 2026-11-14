@@ -1,7 +1,6 @@
-// Hand-maintained types mirroring supabase/migrations/0001_init.sql.
-// If you have the Supabase CLI, prefer generating these with:
-//   supabase gen types typescript --project-id <id> > types/database.ts
-// and then re-exporting the domain aliases below on top of it.
+// Types mirroring supabase/migrations/0001_orbit_baseline.sql.
+// Regenerate with `supabase gen types typescript` if the schema changes,
+// then keep the domain aliases below on top of it.
 
 export type Language = 'en' | 'ar';
 export type Visibility = 'public' | 'private';
@@ -17,16 +16,25 @@ export type PlanetSurfaceStyle = string;
 export type PlanetAtmosphere = 'none' | 'thin' | 'thick' | 'stormy';
 export type SpaceBackground = 'deep_space' | 'nebula' | 'aurora' | 'void';
 
-export type ObjectCategory =
-  | 'interest'
-  | 'idea'
-  | 'value'
-  | 'skill'
-  | 'goal'
-  | 'passion'
-  | 'current_exploration';
+export type LinkType =
+  | 'instagram'
+  | 'x'
+  | 'tiktok'
+  | 'snapchat'
+  | 'youtube'
+  | 'linkedin'
+  | 'github'
+  | 'behance'
+  | 'dribbble'
+  | 'whatsapp'
+  | 'telegram'
+  | 'email'
+  | 'website';
 
-export type VisualType = 'star' | 'moon' | 'planet' | 'comet' | 'satellite';
+export interface ProfileLink {
+  type: LinkType;
+  url: string;
+}
 
 export interface ProfileRow {
   id: string;
@@ -42,29 +50,13 @@ export interface ProfileRow {
   planet_has_ring: boolean;
   universe_mood: UniverseMood;
   space_background: SpaceBackground;
-  is_published: boolean;
   music_url: string | null;
   music_enabled: boolean;
   music_volume: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UniverseObjectRow {
-  id: string;
-  profile_id: string;
-  name: string;
-  category: ObjectCategory;
-  description: string | null;
-  importance: number; // 1-5
-  visual_type: VisualType;
-  position_x: number;
-  position_y: number;
-  object_size: number;
-  object_color: string | null;
-  orbit_radius: number;
-  orbit_speed: number;
-  sort_order: number;
+  links: ProfileLink[];
+  is_published: boolean;
+  show_in_explore: boolean;
+  published_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -75,23 +67,30 @@ export interface StarRow {
   title: string;
   content: string | null;
   icon: string;
+  category: string | null;
+  link_url: string | null;
   angle: number;
   distance: number;
   size: number;
   visual_type: string;
   orbit_speed: number;
   star_color: string | null;
+  resonance_count: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface PublicUniverseRow {
-  id: string;
+export interface PlanetViewsRow {
+  profile_id: string;
+  day: string;
+  views: number;
+}
+
+export interface ExplorePlanetRow {
   username: string;
   display_name: string;
   bio: string | null;
-  language: Language;
   planet_color: string;
   planet_surface_style: PlanetSurfaceStyle;
   planet_atmosphere: PlanetAtmosphere;
@@ -99,42 +98,25 @@ export interface PublicUniverseRow {
   planet_has_ring: boolean;
   universe_mood: UniverseMood;
   space_background: SpaceBackground;
-  objects: Array<
-    Pick<
-      UniverseObjectRow,
-      | 'id'
-      | 'name'
-      | 'category'
-      | 'description'
-      | 'importance'
-      | 'visual_type'
-      | 'position_x'
-      | 'position_y'
-      | 'object_size'
-      | 'object_color'
-      | 'orbit_radius'
-      | 'orbit_speed'
-      | 'sort_order'
-    >
-  >;
+  published_at: string | null;
+  star_count: number;
 }
 
-// Minimal Database interface shape consumed by @supabase/supabase-js's
-// generic client typing. Extend as new tables/views are added.
+type Insertable<Row, Required extends keyof Row> = Partial<Row> & Pick<Row, Required>;
+
 export interface Database {
   public: {
     Tables: {
       profiles: {
         Row: ProfileRow;
-        Insert: Partial<ProfileRow> & Pick<ProfileRow, 'id' | 'username' | 'display_name'>;
+        Insert: Insertable<ProfileRow, 'id' | 'username' | 'display_name'>;
         Update: Partial<ProfileRow>;
         Relationships: [];
       };
-      universe_objects: {
-        Row: UniverseObjectRow;
-        Insert: Partial<UniverseObjectRow> &
-          Pick<UniverseObjectRow, 'profile_id' | 'name' | 'category'>;
-        Update: Partial<UniverseObjectRow>;
+      stars: {
+        Row: StarRow;
+        Insert: Insertable<StarRow, 'profile_id' | 'title'>;
+        Update: Partial<StarRow>;
         Relationships: [];
       };
       reserved_usernames: {
@@ -143,48 +125,38 @@ export interface Database {
         Update: { username: string };
         Relationships: [];
       };
-      stars: {
-        Row: StarRow;
-        Insert: Partial<StarRow> &
-          Pick<StarRow, 'profile_id' | 'title'>;
-        Update: Partial<StarRow>;
-        Relationships: [];
-      };
       site_config: {
         Row: { key: string; value: Record<string, unknown>; updated_at: string };
-        Insert: {
-          key: string;
-          value: Record<string, unknown>;
-          updated_at?: string;
-        };
-        Update: Partial<{
-          key: string;
-          value: Record<string, unknown>;
-          updated_at: string;
-        }>;
+        Insert: { key: string; value: Record<string, unknown>; updated_at?: string };
+        Update: Partial<{ key: string; value: Record<string, unknown>; updated_at: string }>;
+        Relationships: [];
+      };
+      planet_views_daily: {
+        Row: PlanetViewsRow;
+        Insert: PlanetViewsRow;
+        Update: Partial<PlanetViewsRow>;
         Relationships: [];
       };
     };
     Views: {
-      public_universes: {
-        Row: PublicUniverseRow;
-        Relationships: [];
-      };
-      admin_stats: {
-        Row: {
-          total_users: number;
-          total_profiles: number;
-          published_profiles: number;
-          total_stars: number;
-        };
+      explore_planets: {
+        Row: ExplorePlanetRow;
         Relationships: [];
       };
     };
     Functions: {
-      get_registered_user_count: {
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      get_public_stats: {
         Args: Record<string, never>;
-        Returns: number;
+        Returns: { planets: number; stars: number };
       };
+      is_username_available: { Args: { p_username: string }; Returns: boolean };
+      record_planet_view: { Args: { p_username: string }; Returns: undefined };
+      resonate_star: { Args: { p_star_id: string }; Returns: number };
+      delete_my_account: { Args: Record<string, never>; Returns: undefined };
+      admin_overview: { Args: Record<string, never>; Returns: unknown };
+      admin_reset_planet: { Args: { p_profile_id: string }; Returns: undefined };
+      admin_delete_user: { Args: { p_user_id: string }; Returns: undefined };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

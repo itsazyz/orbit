@@ -10,6 +10,7 @@ import {
   setPlanetPublished,
   setPlanetVisibility,
   deleteUserPlanet,
+  deleteUserAccount,
 } from '@/lib/actions/admin';
 import { DEFAULT_HOMEPAGE_CONTENT, DEFAULT_SITE_SETTINGS } from '@/lib/site-config/defaults';
 import {
@@ -153,6 +154,21 @@ export function AdminPanel({ data }: AdminPanelProps) {
     });
   }
 
+  function deleteAccount(userId: string, email: string) {
+    if (!confirm(interpolate(t('admin.users.confirmDelete'), { email }))) return;
+
+    startTransition(async () => {
+      const result = await deleteUserAccount(userId);
+      if (!result.ok) {
+        notify(result.error);
+        return;
+      }
+      setUsers((current) => current.filter((user) => user.id !== userId));
+      setPlanets((current) => current.filter((planet) => planet.id !== userId));
+      notify(t('admin.users.deleted'));
+    });
+  }
+
   function resetPlanet(profileId: string) {
     if (!confirm(t('admin.planets.confirmReset'))) return;
 
@@ -225,9 +241,13 @@ export function AdminPanel({ data }: AdminPanelProps) {
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { label: t('admin.stats.users'), value: data.stats.totalUsers },
-                { label: t('admin.stats.profiles'), value: data.stats.totalProfiles },
+                { label: t('admin.stats.signups7d'), value: data.stats.signups7d },
                 { label: t('admin.stats.published'), value: data.stats.publishedProfiles },
                 { label: t('admin.stats.stars'), value: data.stats.totalStars },
+                { label: t('admin.stats.views'), value: data.stats.totalViews },
+                { label: t('admin.stats.viewsToday'), value: data.stats.viewsToday },
+                { label: t('admin.stats.resonance'), value: data.stats.totalResonance },
+                { label: t('admin.stats.profiles'), value: data.stats.totalProfiles },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -251,7 +271,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                   >
                     <span>
                       {planet.displayName}{' '}
-                      <span className="text-slate-500">orbit/{planet.username}</span>
+                      <span className="text-slate-500">/{planet.username}</span>
                     </span>
                     <Link
                       href={`/${planet.username}`}
@@ -287,7 +307,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                   {users.map((user) => (
                     <tr key={user.id} className="border-t border-white/5">
                       <td className="py-3 pe-4 text-slate-300">{user.email}</td>
-                      <td className="py-3 pe-4">orbit/{user.username}</td>
+                      <td className="py-3 pe-4">/{user.username}</td>
                       <td className="py-3 pe-4">{user.starCount}</td>
                       <td className="py-3 pe-4">
                         {user.isPublished ? t('admin.users.published') : t('admin.users.draft')}
@@ -312,6 +332,13 @@ export function AdminPanel({ data }: AdminPanelProps) {
                               ? t('admin.users.unpublish')
                               : t('admin.users.publish')}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteAccount(user.id, user.email)}
+                            className="text-red-300 hover:text-red-200"
+                          >
+                            {t('admin.users.delete')}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -330,6 +357,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                   <tr>
                     <th className="pb-3 pe-4">{t('admin.planets.planet')}</th>
                     <th className="pb-3 pe-4">{t('admin.planets.stars')}</th>
+                    <th className="pb-3 pe-4">{t('admin.planets.views')}</th>
                     <th className="pb-3 pe-4">{t('admin.planets.music')}</th>
                     <th className="pb-3 pe-4">{t('admin.planets.visibility')}</th>
                     <th className="pb-3">{t('admin.planets.actions')}</th>
@@ -351,6 +379,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
                         </div>
                       </td>
                       <td className="py-3 pe-4">{planet.starCount}</td>
+                      <td className="py-3 pe-4">{planet.views ?? 0}</td>
                       <td className="py-3 pe-4">
                         {planet.musicEnabled ? t('admin.planets.on') : t('admin.planets.off')}
                       </td>

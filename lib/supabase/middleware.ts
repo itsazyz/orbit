@@ -2,6 +2,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseEnv } from '@/lib/env';
 
+const LANGUAGE_COOKIE = 'orbit-lang';
+
 const PROTECTED_PREFIXES = ['/dashboard', '/settings', '/create', '/orbit-control'];
 
 /** App routes — lowercase only; redirect /ORBIT-CONTROL → /orbit-control */
@@ -36,10 +38,40 @@ function redirectToCanonicalPath(request: NextRequest): NextResponse | null {
  * - Refreshes the Supabase auth session cookie (required by @supabase/ssr).
  * - Redirects unauthenticated users away from protected routes.
  */
+/**
+ * First visit: pick Arabic for Arabic browsers, English otherwise. The value
+ * is written onto the request (so this render already uses it) and onto the
+ * response (so it sticks). The language toggle overrides it afterwards.
+ */
+function detectLanguage(request: NextRequest): 'ar' | 'en' | null {
+  if (request.cookies.get(LANGUAGE_COOKIE)) return null;
+  const header = request.headers.get('accept-language') ?? '';
+  const lang = /^\s*ar\b/i.test(header) ? 'ar' : 'en';
+  request.cookies.set(LANGUAGE_COOKIE, lang);
+  return lang;
+}
+
+function persistLanguage(response: NextResponse, lang: 'ar' | 'en' | null) {
+  if (lang) {
+    response.cookies.set(LANGUAGE_COOKIE, lang, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+  }
+  return response;
+}
+
 export async function updateSession(request: NextRequest) {
   const canonicalRedirect = redirectToCanonicalPath(request);
   if (canonicalRedirect) return canonicalRedirect;
 
+  const detectedLang = detectLanguage(request);
+  const response = await refreshSession(request);
+  return persistLanguage(response, detectedLang);
+}
+
+async function refreshSession(request: NextRequest) {
   const supabaseEnv = getSupabaseEnv();
 
   // Allow public pages to load even when Supabase env vars are missing
