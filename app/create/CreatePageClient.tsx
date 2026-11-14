@@ -35,6 +35,7 @@ import { PlanetSurfacePicker } from '@/components/create/PlanetSurfacePicker';
 import { AtmospherePicker, BackgroundPicker, MoodPicker, StarShapePicker } from '@/components/create/VisualPickers';
 import { MusicPicker } from '@/components/create/MusicPicker';
 import { PlanetPreview } from '@/components/create/PlanetPreview';
+import { StarMediaEditor } from '@/components/create/StarMediaEditor';
 import { LinkIcon } from '@/components/links/LinkIcon';
 import type { LinkType } from '@/types/database';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,7 @@ function newStarDraft(prompt?: StarPrompt, lang: 'en' | 'ar' = 'en'): StarDraft 
     visualType: 'sparkle',
     category: prompt?.category ?? null,
     linkUrl: '',
+    media: null,
     isNew: true,
     prompt: prompt ? prompt[lang] : undefined,
   };
@@ -246,6 +248,10 @@ export function CreatePageClient() {
       if (/reserved/i.test(result.error)) {
         goTo(0);
         setError(t('wizard.reserved'));
+        return;
+      }
+      if (/CONTENT_BLOCKED/.test(result.error)) {
+        setError(t('wizard.errBlocked'));
         return;
       }
       setError(result.error || t('wizard.errSave'));
@@ -683,6 +689,15 @@ export function CreatePageClient() {
                       {star.content ? (
                         <p className="mt-1 line-clamp-2 text-sm text-white/55">{star.content}</p>
                       ) : null}
+                      {star.media ? (
+                        <p className="mt-1 text-[11px] text-accent">
+                          {star.media.type === 'youtube'
+                            ? '▶ YouTube'
+                            : star.media.type === 'spotify'
+                              ? '♪ Spotify'
+                              : `▣ ${star.media.type === 'gallery' ? star.media.urls.length : 1}`}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
@@ -840,6 +855,15 @@ export function CreatePageClient() {
                       onChange={(v) => setStarDraft({ ...starDraft, visualType: v })}
                     />
                   </div>
+
+                  {userId ? (
+                    <StarMediaEditor
+                      userId={userId}
+                      starId={starDraft.id}
+                      value={starDraft.media}
+                      onChange={(media) => setStarDraft((d) => (d ? { ...d, media } : d))}
+                    />
+                  ) : null}
 
                   <div>
                     <label className={label} htmlFor="s-link">

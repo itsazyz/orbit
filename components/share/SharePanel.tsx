@@ -29,7 +29,8 @@ export function SharePanel(props: SharePanelProps) {
   const [storyBusy, setStoryBusy] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const { url, onShared } = props;
-  const message = `${t('share.message')} ${url}`;
+  const tagged = (tag: string) => `${url}${url.includes('?') ? '&' : '?'}s=${tag}`;
+  const messageFor = (tag: string) => `${t('share.message')} ${tagged(tag)}`;
 
   const copy = useCallback(async () => {
     try {
@@ -69,7 +70,7 @@ export function SharePanel(props: SharePanelProps) {
       const file = new File([blob], `orbit-${props.username}.png`, { type: 'image/png' });
       const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
       if (nav.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'ORBIT', text: url });
+        await navigator.share({ files: [file], title: 'ORBIT', text: tagged('story') });
       } else {
         const href = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -86,7 +87,7 @@ export function SharePanel(props: SharePanelProps) {
     }
   }, [onShared, props, t, url]);
 
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&data=${encodeURIComponent(url)}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&data=${encodeURIComponent(tagged('qr'))}`;
 
   return (
     <div className={cn('space-y-4', props.className)}>
@@ -109,7 +110,7 @@ export function SharePanel(props: SharePanelProps) {
           <Share2 size={16} /> {t('share.native')}
         </button>
         <a
-          href={`https://wa.me/?text=${encodeURIComponent(message)}`}
+          href={`https://wa.me/?text=${encodeURIComponent(messageFor('wa'))}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onShared?.()}
@@ -118,7 +119,7 @@ export function SharePanel(props: SharePanelProps) {
           <MessageCircle size={16} className="text-[#25d366]" /> {t('share.whatsapp')}
         </a>
         <a
-          href={`https://x.com/intent/post?text=${encodeURIComponent(message)}`}
+          href={`https://x.com/intent/post?text=${encodeURIComponent(messageFor('x'))}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onShared?.()}

@@ -7,7 +7,7 @@ import type {
   SpaceBackground,
   UniverseMood,
 } from '@/types/database';
-import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
+import { PlanetVisual } from '@/components/planet/Planet3D';
 import { StarShape } from '@/components/universe/StarShape';
 import { STAR_TYPE_COLORS } from '@/lib/universe/constants';
 import { layoutOrbit, ORBIT_RINGS, STAGE_SIZE } from '@/lib/universe/orbit-layout';
@@ -28,6 +28,8 @@ export interface OrbitStar {
   title: string;
   icon: string;
   visualType: string;
+  /** Stars sharing a category are joined into a constellation */
+  category?: string | null;
 }
 
 interface OrbitStageProps {
@@ -41,6 +43,11 @@ interface OrbitStageProps {
   paused?: boolean;
   className?: string;
   planetSize?: number;
+  /** WebGL planet (falls back to CSS automatically) */
+  render3d?: boolean;
+  /** Draw constellation lines between stars of the same category */
+  constellations?: boolean;
+  seed?: string;
 }
 
 /**
@@ -58,6 +65,9 @@ export function OrbitStage({
   paused = false,
   className,
   planetSize = 150,
+  render3d = false,
+  constellations = true,
+  seed,
 }: OrbitStageProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
@@ -82,6 +92,66 @@ export function OrbitStage({
     [slots]
   );
   const showLabels = scale >= labelMinScale;
+
+  // ---- constellation edges: chain stars that share a category ----
+  const edges = useMemo(() => {
+    if (!constellations) return [] as Array<{ a: number; b: number; category: string }>;
+    const byCat = new Map<string, number[]>();
+    stars.forEach((s, i) => {
+      if (!s.category) return;
+      const list = byCat.get(s.category) ?? [];
+      list.push(i);
+      byCat.set(s.category, list);
+    });
+    const out: Array<{ a: number; b: number; category: string }> = [];
+    byCat.forEach((idx, category) => {
+      for (let k = 0; k + 1 < idx.length; k += 1) out.push({ a: idx[k]!, b: idx[k + 1]!, category });
+    });
+    return out;
+  }, [stars, constellations]);
+
+  const armRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const lineRefs = useRef<Array<SVGLineElement | null>>([]);
+
+  useEffect(() => {
+    if (!edges.length) return;
+    let raf = 0;
+    const cache = new Map<number, Animation | null>();
+    const angleOf = (i: number): number => {
+      const slot = slots[i];
+      if (!slot) return 0;
+      let anim = cache.get(i);
+      if (anim === undefined) {
+        const el = armRefs.current[i];
+        const found: Animation | null =
+          el && typeof el.getAnimations === 'function' ? el.getAnimations()[0] ?? null : null;
+        anim = found;
+        cache.set(i, found);
+      }
+      const progress = anim?.effect?.getComputedTiming().progress;
+      return typeof progress === 'number' ? progress * 360 : slot.angle;
+    };
+    const center = STAGE_SIZE / 2;
+    const tick = () => {
+      edges.forEach((edge, k) => {
+        const line = lineRefs.current[k];
+        const sa = slots[edge.a];
+        const sb = slots[edge.b];
+        if (!line || !sa || !sb) return;
+        const aa = (angleOf(edge.a) * Math.PI) / 180;
+        const ab = (angleOf(edge.b) * Math.PI) / 180;
+        line.setAttribute('x1', String(center + Math.cos(aa) * sa.radius));
+        line.setAttribute('y1', String(center + Math.sin(aa) * sa.radius));
+        line.setAttribute('x2', String(center + Math.cos(ab) * sb.radius));
+        line.setAttribute('y2', String(center + Math.sin(ab) * sb.radius));
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [edges, slots]);
+
+  const selectedCategory = stars.find((s) => s.id === selectedId)?.category ?? null;
 
   return (
     <div ref={boxRef} className={cn('relative h-full w-full', className)}>
@@ -108,8 +178,26 @@ export function OrbitStage({
           aria-hidden
         />
 
+        {edges.length ? (
+          <svg className="orbit-lines" width={STAGE_SIZE} height={STAGE_SIZE} aria-hidden>
+            {edges.map((edge, k) => (
+              <line
+                key={`${edge.a}-${edge.b}`}
+                ref={(el) => {
+                  lineRefs.current[k] = el;
+                }}
+                stroke={planet.color}
+                strokeWidth={selectedCategory === edge.category ? 1.6 : 1}
+                strokeOpacity={selectedCategory === edge.category ? 0.75 : 0.28}
+                strokeDasharray="2 5"
+                strokeLinecap="round"
+              />
+            ))}
+          </svg>
+        ) : null}
+
         <div className="orbit-planet">
-          <PlanetRenderer
+          <PlanetVisual
             color={planet.color}
             surfaceStyle={planet.surfaceStyle}
             atmosphere={planet.atmosphere}
@@ -118,8 +206,8 @@ export function OrbitStage({
             mood={planet.mood}
             spaceBackground={planet.spaceBackground}
             size={planetSize}
-            animate
-            spin
+            seed={seed}
+            render3d={render3d}
           />
         </div>
 
@@ -144,7 +232,14 @@ export function OrbitStage({
           const starClass = cn('orbit-star', selectedId === star.id && 'is-selected');
 
           return (
-            <div key={star.id} className="orbit-arm" style={vars}>
+            <div
+              key={star.id}
+              className="orbit-arm"
+              style={vars}
+              ref={(el) => {
+                armRefs.current[index] = el;
+              }}
+            >
               <div className="orbit-body">
                 <div className="orbit-upright">
                   {onSelect ? (

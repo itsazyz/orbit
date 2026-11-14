@@ -36,6 +36,33 @@ export interface ProfileLink {
   url: string;
 }
 
+export type StarMedia =
+  | { type: 'image'; url: string; alt?: string }
+  | { type: 'gallery'; urls: string[] }
+  | { type: 'youtube'; id: string }
+  | { type: 'spotify'; kind: 'track' | 'album' | 'playlist' | 'episode' | 'show'; id: string };
+
+export type MessageStatus = 'pending' | 'approved' | 'hidden';
+
+export interface PlanetMessageRow {
+  id: string;
+  profile_id: string;
+  author_name: string;
+  body: string;
+  status: MessageStatus;
+  author_id: string | null;
+  sender_hash: string | null;
+  created_at: string;
+}
+
+export interface PlanetStatRow {
+  profile_id: string;
+  day: string;
+  metric: 'source' | 'country' | 'device' | 'star_open' | 'link_click' | 'share';
+  dim: string;
+  count: number;
+}
+
 export interface ProfileRow {
   id: string;
   username: string;
@@ -54,6 +81,8 @@ export interface ProfileRow {
   music_enabled: boolean;
   music_volume: number;
   links: ProfileLink[];
+  guestbook_enabled: boolean;
+  is_banned: boolean;
   is_published: boolean;
   show_in_explore: boolean;
   published_at: string | null;
@@ -75,6 +104,7 @@ export interface StarRow {
   visual_type: string;
   orbit_speed: number;
   star_color: string | null;
+  media: StarMedia | null;
   resonance_count: number;
   sort_order: number;
   created_at: string;
@@ -131,6 +161,32 @@ export interface Database {
         Update: Partial<{ key: string; value: Record<string, unknown>; updated_at: string }>;
         Relationships: [];
       };
+      planet_messages: {
+        Row: PlanetMessageRow;
+        Insert: Partial<PlanetMessageRow>;
+        Update: Partial<PlanetMessageRow>;
+        Relationships: [];
+      };
+      planet_stats_daily: {
+        Row: PlanetStatRow;
+        Insert: PlanetStatRow;
+        Update: Partial<PlanetStatRow>;
+        Relationships: [];
+      };
+      reports: {
+        Row: {
+          id: string;
+          profile_id: string;
+          message_id: string | null;
+          reason: string;
+          details: string | null;
+          status: 'open' | 'resolved' | 'dismissed';
+          created_at: string;
+        };
+        Insert: Record<string, unknown>;
+        Update: { status?: 'open' | 'resolved' | 'dismissed' };
+        Relationships: [];
+      };
       planet_views_daily: {
         Row: PlanetViewsRow;
         Insert: PlanetViewsRow;
@@ -155,6 +211,23 @@ export interface Database {
       resonate_star: { Args: { p_star_id: string }; Returns: number };
       delete_my_account: { Args: Record<string, never>; Returns: undefined };
       admin_overview: { Args: Record<string, never>; Returns: unknown };
+      submit_planet_message: { Args: { p_username: string; p_name: string; p_body: string }; Returns: string };
+      submit_report: {
+        Args: { p_username: string; p_reason: string; p_details?: string | null; p_message_id?: string | null };
+        Returns: undefined;
+      };
+      track_planet_event: {
+        Args: {
+          p_username: string;
+          p_event: string;
+          p_dim?: string | null;
+          p_source?: string | null;
+          p_country?: string | null;
+          p_device?: string | null;
+        };
+        Returns: undefined;
+      };
+      admin_reports: { Args: Record<string, never>; Returns: unknown };
       admin_reset_planet: { Args: { p_profile_id: string }; Returns: undefined };
       admin_delete_user: { Args: { p_user_id: string }; Returns: undefined };
     };

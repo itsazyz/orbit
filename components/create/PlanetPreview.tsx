@@ -40,8 +40,11 @@ export function PlanetPreview({ state, emptyName, emptyBio, className }: PlanetP
             title: s.title,
             icon: s.icon,
             visualType: s.visualType,
+            category: s.category,
           }))}
           labelMinScale={0.7}
+          render3d
+          seed={state.username || 'preview'}
         />
       </div>
       <div className="relative px-6 pb-6 text-center">

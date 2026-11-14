@@ -1,7 +1,8 @@
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { parseProfileLinks } from '@/lib/links';
-import type { ProfileLink, ProfileRow, StarRow } from '@/types/database';
+import { parseStarMedia } from '@/lib/media';
+import type { ProfileLink, ProfileRow, StarMedia, StarRow } from '@/types/database';
 
 export type PublicPlanetProfile = Pick<
   ProfileRow,
@@ -21,25 +22,34 @@ export type PublicPlanetProfile = Pick<
   | 'music_enabled'
   | 'music_volume'
   | 'published_at'
+  | 'guestbook_enabled'
 > & { links: ProfileLink[] };
 
 export type PublicPlanetStar = Pick<
   StarRow,
   'id' | 'title' | 'content' | 'icon' | 'category' | 'link_url' | 'visual_type' | 'resonance_count'
->;
+> & { media: StarMedia | null };
+
+export interface PublicMessage {
+  id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
 
 export interface PublicPlanet {
   profile: PublicPlanetProfile;
   stars: PublicPlanetStar[];
+  messages: PublicMessage[];
   viewerIsOwner: boolean;
   /** Published and public (an owner may be previewing a draft) */
   isLive: boolean;
 }
 
 const PROFILE_COLUMNS =
-  'id, username, display_name, bio, language, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_url, music_enabled, music_volume, published_at, links, is_published, visibility';
+  'id, username, display_name, bio, language, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_url, music_enabled, music_volume, published_at, links, is_published, visibility, guestbook_enabled';
 
-const STAR_COLUMNS = 'id, title, content, icon, category, link_url, visual_type, resonance_count';
+const STAR_COLUMNS = 'id, title, content, icon, category, link_url, visual_type, resonance_count, media';
 
 export function normalizeUsername(raw: string): string {
   try {
@@ -74,11 +84,18 @@ export const getPublicPlanet = cache(async (rawUsername: string): Promise<Public
   const isLive = profile.is_published && profile.visibility === 'public';
   if (!isLive && !viewerIsOwner) return null;
 
-  const { data: stars, error: starsError } = await supabase
-    .from('stars')
-    .select(STAR_COLUMNS)
-    .eq('profile_id', profile.id)
-    .order('sort_order', { ascending: true });
+  const [{ data: stars, error: starsError }, { data: messages }] = await Promise.all([
+    supabase.from('stars').select(STAR_COLUMNS).eq('profile_id', profile.id).order('sort_order', { ascending: true }),
+    profile.guestbook_enabled
+      ? supabase
+          .from('planet_messages')
+          .select('id, author_name, body, created_at')
+          .eq('profile_id', profile.id)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(60)
+      : Promise.resolve({ data: [] as PublicMessage[] }),
+  ]);
 
   if (starsError) console.error('[planet] stars read failed:', starsError.message);
 
@@ -86,7 +103,11 @@ export const getPublicPlanet = cache(async (rawUsername: string): Promise<Public
 
   return {
     profile: { ...rest, links: parseProfileLinks(links) },
-    stars: (stars ?? []) as PublicPlanetStar[],
+    stars: ((stars ?? []) as Array<PublicPlanetStar & { media: unknown }>).map((star) => ({
+      ...star,
+      media: parseStarMedia(star.media),
+    })),
+    messages: (messages ?? []) as PublicMessage[],
     viewerIsOwner,
     isLive,
   };

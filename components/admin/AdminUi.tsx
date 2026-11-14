@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 export type AdminTab =
   | 'overview'
+  | 'moderation'
   | 'users'
   | 'planets'
   | 'presets'
@@ -22,6 +23,7 @@ export function AdminTabs({
 }) {
   const tabs: AdminTab[] = [
     'overview',
+    'moderation',
     'users',
     'planets',
     'presets',

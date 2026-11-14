@@ -11,7 +11,9 @@ import {
   setPlanetVisibility,
   deleteUserPlanet,
   deleteUserAccount,
+  setUserBanned,
 } from '@/lib/actions/admin';
+import { ModerationTab } from './ModerationTab';
 import { DEFAULT_HOMEPAGE_CONTENT, DEFAULT_SITE_SETTINGS } from '@/lib/site-config/defaults';
 import {
   STAR_VISUAL_OPTIONS,
@@ -45,6 +47,7 @@ export function AdminPanel({ data }: AdminPanelProps) {
 
   const tabLabels: Record<AdminTab, string> = {
     overview: t('admin.tabs.overview'),
+    moderation: `${t('admin.tabs.moderation')}${data.stats.openReports ? ` (${data.stats.openReports})` : ''}`,
     users: t('admin.tabs.users'),
     planets: t('admin.tabs.planets'),
     presets: t('admin.tabs.presets'),
@@ -154,6 +157,18 @@ export function AdminPanel({ data }: AdminPanelProps) {
     });
   }
 
+  function toggleBan(userId: string, banned: boolean) {
+    startTransition(async () => {
+      const result = await setUserBanned(userId, banned);
+      if (!result.ok) {
+        notify(result.error);
+        return;
+      }
+      setUsers((current) => current.map((u) => (u.id === userId ? { ...u, isBanned: banned } : u)));
+      notify(t('admin.moderation.done'));
+    });
+  }
+
   function deleteAccount(userId: string, email: string) {
     if (!confirm(interpolate(t('admin.users.confirmDelete'), { email }))) return;
 
@@ -248,6 +263,9 @@ export function AdminPanel({ data }: AdminPanelProps) {
                 { label: t('admin.stats.viewsToday'), value: data.stats.viewsToday },
                 { label: t('admin.stats.resonance'), value: data.stats.totalResonance },
                 { label: t('admin.stats.profiles'), value: data.stats.totalProfiles },
+                { label: t('admin.stats.openReports'), value: data.stats.openReports },
+                { label: t('admin.stats.messages'), value: data.stats.totalMessages },
+                { label: t('admin.stats.banned'), value: data.stats.bannedUsers },
               ].map((item) => (
                 <div
                   key={item.label}
@@ -290,6 +308,8 @@ export function AdminPanel({ data }: AdminPanelProps) {
           </>
         ) : null}
 
+        {tab === 'moderation' ? <ModerationTab notify={notify} /> : null}
+
         {tab === 'users' ? (
           <AdminCard title={t('admin.users.title')} description={t('admin.users.desc')}>
             <div className="overflow-x-auto">
@@ -310,7 +330,11 @@ export function AdminPanel({ data }: AdminPanelProps) {
                       <td className="py-3 pe-4">/{user.username}</td>
                       <td className="py-3 pe-4">{user.starCount}</td>
                       <td className="py-3 pe-4">
-                        {user.isPublished ? t('admin.users.published') : t('admin.users.draft')}
+                        {user.isBanned
+                          ? t('admin.users.banned')
+                          : user.isPublished
+                            ? t('admin.users.published')
+                            : t('admin.users.draft')}
                       </td>
                       <td className="py-3">
                         <div className="flex flex-wrap gap-2">
@@ -331,6 +355,13 @@ export function AdminPanel({ data }: AdminPanelProps) {
                             {user.isPublished
                               ? t('admin.users.unpublish')
                               : t('admin.users.publish')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleBan(user.id, !user.isBanned)}
+                            className="text-amber-200 hover:text-white"
+                          >
+                            {user.isBanned ? t('admin.users.unban') : t('admin.users.ban')}
                           </button>
                           <button
                             type="button"

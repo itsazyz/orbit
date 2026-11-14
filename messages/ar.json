@@ -313,7 +313,8 @@
       "planets": "الكواكب",
       "presets": "الإعدادات البصرية",
       "homepage": "الصفحة الرئيسية",
-      "settings": "إعدادات الموقع"
+      "settings": "إعدادات الموقع",
+      "moderation": "الإشراف"
     },
     "stats": {
       "users": "المستخدمون المسجّلون",
@@ -323,7 +324,10 @@
       "signups7d": "تسجيلات (7 أيام)",
       "views": "إجمالي الزيارات",
       "viewsToday": "زيارات اليوم",
-      "resonance": "مرات التفاعل"
+      "resonance": "مرات التفاعل",
+      "openReports": "بلاغات مفتوحة",
+      "messages": "رسائل سجل الزوار",
+      "banned": "مستخدمون محظورون"
     },
     "overview": {
       "recentTitle": "آخر الكواكب",
@@ -346,7 +350,10 @@
       "unpublish": "إلغاء النشر",
       "delete": "حذف",
       "confirmDelete": "حذف {email} وكوكبه نهائياً؟",
-      "deleted": "تم حذف المستخدم."
+      "deleted": "تم حذف المستخدم.",
+      "ban": "حظر",
+      "unban": "فك الحظر",
+      "banned": "محظور"
     },
     "planets": {
       "title": "كل الكواكب",
@@ -441,6 +448,20 @@
       "accessDeniedMessage": "هذه الصفحة خاصة. اضبط ORBIT_ADMIN_EMAIL في Vercel على بريدك ({status}).",
       "envServiceRole": "SUPABASE_SERVICE_ROLE_KEY — Supabase → Settings → API → service_role",
       "envAdminEmail": "ORBIT_ADMIN_EMAIL — بريد تسجيل الدخول"
+    },
+    "moderation": {
+      "reportsTitle": "البلاغات",
+      "reportsDesc": "بلاغات الزوار المفتوحة. الحظر يخفي الكوكب من كل مكان حتى تفك الحظر.",
+      "noReports": "لا توجد بلاغات مفتوحة.",
+      "hideMessage": "أخفِ الرسالة",
+      "resolve": "تمت المعالجة",
+      "dismiss": "تجاهل",
+      "done": "تم.",
+      "wordsTitle": "الكلمات المحظورة",
+      "wordsDesc": "كلمة أو عبارة في كل سطر. الكواكب والنجوم التي تحتويها لا تُحفظ، ورسائل سجل الزوار التي تحتويها تُخفى تلقائياً.",
+      "wordsPlaceholder": "كلمة في كل سطر",
+      "wordsSave": "احفظ القائمة",
+      "wordsSaved": "تم حفظ الكلمات المحظورة."
     }
   },
   "planet": {
@@ -474,7 +495,32 @@
     "starsCount": "{count} نجوم",
     "starOne": "نجمة واحدة",
     "links": "روابط",
-    "poweredBy": "صُنع بـ ORBIT"
+    "poweredBy": "صُنع بـ ORBIT",
+    "entering": "الدخول إلى عالم {name}",
+    "guestbook": "سجل الزوار",
+    "guestbookTitle": "سجل الزوار",
+    "guestbookSubtitle": "اترك لـ{name} كلمة.",
+    "guestbookEmpty": "لا رسائل بعد. كن أول من يكتب.",
+    "guestbookName": "اسمك",
+    "guestbookMessage": "اكتب كلمة طيبة…",
+    "guestbookSend": "إرسال",
+    "guestbookSent": "وصلت. ستظهر بعد أن يوافق عليها {name}.",
+    "guestbookClosed": "سجل الزوار مغلق.",
+    "guestbookRateLimited": "أرسلت رسائل كثيرة اليوم. جرّب بكرة.",
+    "guestbookModerated": "تظهر الرسائل بعد الموافقة.",
+    "genericError": "صار خطأ. حاول مرة ثانية.",
+    "report": "الإبلاغ عن هذا الكوكب",
+    "reportTitle": "الإبلاغ عن هذا الكوكب",
+    "reportMessage": "الإبلاغ عن هذه الرسالة",
+    "reportDetails": "تفاصيل تساعدنا؟ (اختياري)",
+    "reportSend": "أرسل البلاغ",
+    "reportSent": "شكراً لك. سيراجعه فريقنا.",
+    "reasons": {
+      "spam": "مزعج / سبام",
+      "offensive": "مسيء",
+      "impersonation": "انتحال شخصية",
+      "other": "سبب آخر"
+    }
   },
   "share": {
     "title": "شارك عالمك",
@@ -529,7 +575,65 @@
     "checkBio": "اكتب نبذة من سطر واحد",
     "checkLinks": "أضف حساباتك الاجتماعية",
     "checkShare": "شارك رابطك مرة واحدة",
-    "home": "الرئيسية"
+    "home": "الرئيسية",
+    "analyticsTitle": "التحليلات",
+    "period7": "7 أيام",
+    "period30": "30 يوماً",
+    "analyticsEmpty": "لا زيارات في هذه الفترة بعد. شارك رابطك وستظهر الأرقام هنا.",
+    "sources": "من أين يأتي الزوار",
+    "countries": "الدول",
+    "devices": "الأجهزة",
+    "shares": "مشاركات الزوار",
+    "topStarOpens": "أكثر النجوم فتحاً",
+    "topLinks": "أكثر الروابط ضغطاً",
+    "noData": "لا شيء بعد.",
+    "unknownCountry": "غير معروف",
+    "analyticsPrivacy": "نحفظ المجاميع اليومية فقط، لا نعرف من زارك",
+    "visitsInPeriod": "زيارة في هذه الفترة",
+    "source": {
+      "instagram": "إنستغرام",
+      "whatsapp": "واتساب",
+      "x": "X",
+      "tiktok": "تيك توك",
+      "snapchat": "سناب شات",
+      "telegram": "تيليجرام",
+      "linkedin": "لينكدإن",
+      "facebook": "فيسبوك",
+      "google": "جوجل",
+      "youtube": "يوتيوب",
+      "qr": "رمز QR",
+      "story": "صورة الستوري",
+      "explore": "صفحة الاستكشاف",
+      "orbit": "داخل ORBIT",
+      "direct": "مباشر / غير معروف",
+      "other": "مواقع أخرى"
+    },
+    "device": {
+      "mobile": "جوال",
+      "tablet": "تابلت",
+      "desktop": "كمبيوتر"
+    },
+    "shareChannel": {
+      "copy": "نسخ الرابط",
+      "native": "قائمة المشاركة",
+      "whatsapp": "واتساب",
+      "x": "X",
+      "story": "ستوري",
+      "qr": "QR"
+    },
+    "guestbookTitle": "سجل الزوار",
+    "guestbookHint": "رسائل الزوار تنتظر هنا حتى توافق عليها.",
+    "guestbookEnabled": "سجل الزوار مفعّل",
+    "newMessages": "{count} رسائل جديدة",
+    "msg": {
+      "pending": "بانتظارك",
+      "approved": "ظاهرة",
+      "hidden": "مخفية",
+      "empty": "لا شيء هنا.",
+      "approve": "وافق",
+      "hide": "أخفِ",
+      "delete": "احذف"
+    }
   },
   "wizard": {
     "titleNew": "ابنِ عالمك",
@@ -611,7 +715,18 @@
     "errMaxStars": "العالم يتسع لـ 20 نجمة كحد أقصى.",
     "errSave": "تعذّر الحفظ. حاول مرة أخرى.",
     "errNotSignedIn": "انتهت جلستك. سجّل الدخول مجدداً.",
-    "publishedTitle": "عالمك منشور الآن ✦"
+    "publishedTitle": "عالمك منشور الآن ✦",
+    "media": "وسائط (اختياري)",
+    "mediaNone": "بدون",
+    "mediaImage": "صور",
+    "mediaUpload": "أضف صورة",
+    "mediaUploading": "جارٍ الرفع…",
+    "mediaImageHint": "حتى 4 صور. صورتان أو أكثر تصير معرضاً يُسحب بالإصبع.",
+    "mediaTooLarge": "الصورة كبيرة (الحد 5 ميجا).",
+    "mediaUploadFailed": "فشل الرفع. جرّب صورة ثانية.",
+    "mediaInvalid": "الرابط غير معروف.",
+    "mediaAttach": "أرفق",
+    "errBlocked": "فيه كلمات غير مسموحة. عدّل النص من فضلك."
   },
   "starKinds": {
     "passion": "شغف",

@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowRight,
   ExternalLink,
+  Flag,
+  MessageSquare,
   Pencil,
   Share2,
   Sparkles,
@@ -19,6 +21,11 @@ import { CosmicDust } from '@/components/universe/CosmicDust';
 import { OrbitStage } from '@/components/universe/OrbitStage';
 import { LinkIcon } from '@/components/links/LinkIcon';
 import { SharePanel } from '@/components/share/SharePanel';
+import { WarpIntro } from '@/components/universe/WarpIntro';
+import { StarMediaView } from '@/components/universe/StarMediaView';
+import { GuestbookSheet } from '@/components/universe/GuestbookSheet';
+import { ReportSheet } from '@/components/universe/ReportSheet';
+import { trackPlanet } from '@/lib/track';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/context';
 import { getLinkMeta, linkDisplayText } from '@/lib/links';
@@ -50,6 +57,9 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
   const [muted, setMuted] = useState(false);
   const [musicStarted, setMusicStarted] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [guestbookOpen, setGuestbookOpen] = useState(false);
+  const [report, setReport] = useState<{ messageId: string | null } | null>(null);
+  const [arrived, setArrived] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const name = profile.display_name || profile.username;
@@ -76,10 +86,19 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
     const key = `orbit:viewed:${profile.username}`;
     if (store?.getItem(key)) return;
     store?.setItem(key, '1');
-    supabase.rpc('record_planet_view', { p_username: profile.username }).then(({ error }) => {
-      if (error) console.warn('[planet] view not recorded:', error.message);
-    });
-  }, [supabase, profile.username, viewerIsOwner, isLive]);
+    const params = new URLSearchParams(window.location.search);
+    trackPlanet(profile.username, 'view', { s: params.get('s'), ref: document.referrer });
+  }, [profile.username, viewerIsOwner, isLive]);
+
+  // --- analytics: which stars get opened ---
+  const lastOpened = useRef<string | null>(null);
+  useEffect(() => {
+    if (selected === null || viewerIsOwner || !isLive) return;
+    const id = stars[selected]?.id;
+    if (!id || lastOpened.current === id) return;
+    lastOpened.current = id;
+    trackPlanet(profile.username, 'star_open', { dim: id });
+  }, [selected, stars, viewerIsOwner, isLive, profile.username]);
 
   // --- remember which stars this browser already resonated with ---
   useEffect(() => {
@@ -130,6 +149,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
   const share = useCallback(async () => {
     const url = `${window.location.origin}/${profile.username}`;
     const shareData = { title: `${name} — ORBIT`, text: t('share.message'), url };
+    if (!viewerIsOwner) trackPlanet(profile.username, 'share', { dim: 'share' in navigator ? 'native' : 'copy' });
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -144,7 +164,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
     } catch {
       flash(url);
     }
-  }, [flash, name, profile.username, t]);
+  }, [flash, name, profile.username, t, viewerIsOwner]);
 
   const resonate = useCallback(
     async (starId: string) => {
@@ -182,6 +202,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
         title: s.title,
         icon: s.icon,
         visualType: s.visual_type,
+        category: s.category,
       })),
     [stars]
   );
@@ -192,6 +213,13 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
 
   return (
     <main className="relative min-h-svh overflow-x-hidden text-white">
+      <WarpIntro
+        color={profile.planet_color}
+        label={t('planet.entering', { name })}
+        storageKey={`orbit:warp:${profile.username}`}
+        disabled={viewerIsOwner}
+        onDone={() => setArrived(true)}
+      />
       <div className="fixed inset-0 z-0">
         <UniverseBackground mood={profile.universe_mood} spaceBackground={profile.space_background} />
         <StarsBackground seed={profile.username} count={90} />
@@ -239,7 +267,12 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
       ) : null}
 
       {/* Orbit */}
-      <section className="relative z-10 mx-auto h-[min(54svh,640px)] min-h-[320px] w-full max-w-[720px] sm:h-[min(66svh,640px)]">
+      <section
+        className={cn(
+          'relative z-10 mx-auto h-[min(54svh,640px)] min-h-[320px] w-full max-w-[720px] sm:h-[min(66svh,640px)]',
+          arrived && 'animate-universe-arrive'
+        )}
+      >
         <OrbitStage
           planet={{
             color: profile.planet_color,
@@ -254,6 +287,8 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
           onSelect={stars.length ? setSelected : undefined}
           selectedId={current?.id ?? null}
           paused={selected !== null}
+          render3d
+          seed={profile.username}
         />
       </section>
 
@@ -281,6 +316,9 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
+                  onClick={() => {
+                    if (!viewerIsOwner && isLive) trackPlanet(profile.username, 'link_click', { dim: link.url });
+                  }}
                   className="group flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-sm text-white/85 backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.12]"
                   title={meta.label}
                 >
@@ -296,8 +334,22 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
           </nav>
         ) : null}
 
+        {profile.guestbook_enabled ? (
+          <button
+            type="button"
+            onClick={() => setGuestbookOpen(true)}
+            className="mx-auto mt-5 flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.04] px-4 py-2 text-sm text-white/80 backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.08]"
+          >
+            <MessageSquare size={15} style={{ color: profile.planet_color }} />
+            {t('planet.guestbook')}
+            {planet.messages.length ? (
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px]">{planet.messages.length}</span>
+            ) : null}
+          </button>
+        ) : null}
+
         {stars.length > 0 ? (
-          <p className="mx-auto mt-7 w-fit rounded-full bg-white/[0.05] px-4 py-1.5 text-xs text-white/55">
+          <p className="mx-auto mt-6 w-fit rounded-full bg-white/[0.05] px-4 py-1.5 text-xs text-white/55">
             ✦ {t('planet.tapHint', { name })}
           </p>
         ) : null}
@@ -308,6 +360,15 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             <p className="font-medium">{t('planet.emptyTitle')}</p>
             <p className="mt-1 text-sm text-white/60">{t('planet.emptyText')}</p>
           </div>
+        ) : null}
+        {!viewerIsOwner ? (
+          <button
+            type="button"
+            onClick={() => setReport({ messageId: null })}
+            className="mx-auto mt-10 flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/60"
+          >
+            <Flag size={11} /> {t('planet.report')}
+          </button>
         ) : null}
       </section>
 
@@ -359,7 +420,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             aria-modal="true"
             aria-labelledby="star-title"
             onClick={(e) => e.stopPropagation()}
-            className="animate-sheet-up relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/15 bg-[#0b0d18]/95 p-6 pt-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8"
+            className="animate-sheet-up relative max-h-[90svh] w-full max-w-md overflow-y-auto rounded-[28px] border border-white/15 bg-[#0b0d18]/95 p-6 pt-7 text-center shadow-[0_30px_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8"
           >
             <div
               className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full blur-3xl"
@@ -392,6 +453,11 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             <h2 id="star-title" dir="auto" className="relative mt-2 text-balance text-2xl font-semibold sm:text-3xl">
               {current.title}
             </h2>
+            {current.media ? (
+              <div className="relative mt-4">
+                <StarMediaView media={current.media} title={current.title} />
+              </div>
+            ) : null}
             {current.content ? (
               <p dir="auto" className="relative mt-4 whitespace-pre-wrap text-balance text-[15px] leading-relaxed text-white/80">
                 {current.content}
@@ -461,6 +527,22 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {guestbookOpen ? (
+        <GuestbookSheet
+          username={profile.username}
+          ownerName={name}
+          color={profile.planet_color}
+          messages={planet.messages}
+          isOwner={viewerIsOwner}
+          onClose={() => setGuestbookOpen(false)}
+          onReportMessage={(messageId) => setReport({ messageId })}
+        />
+      ) : null}
+
+      {report ? (
+        <ReportSheet username={profile.username} messageId={report.messageId} onClose={() => setReport(null)} />
       ) : null}
 
       {celebrate ? (

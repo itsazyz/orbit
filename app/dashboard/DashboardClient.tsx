@@ -9,9 +9,11 @@ import { useLanguage } from '@/lib/i18n/context';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { SharePanel } from '@/components/share/SharePanel';
+import { AnalyticsPanel, type StatRow } from './AnalyticsPanel';
+import { GuestbookPanel, type OwnerMessage } from './GuestbookPanel';
 import { hasClaimedUsername } from '@/lib/profile/client';
 import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
-import type { PlanetAtmosphere, SpaceBackground, UniverseMood } from '@/types/database';
+import type { PlanetAtmosphere, ProfileLink, SpaceBackground, UniverseMood } from '@/types/database';
 import { cn, formatCompact } from '@/lib/utils';
 
 export interface DashboardData {
@@ -30,10 +32,14 @@ export interface DashboardData {
     isPublished: boolean;
     showInExplore: boolean;
     linksCount: number;
+    links: ProfileLink[];
+    guestbookEnabled: boolean;
   } | null;
   stars: { id: string; title: string; icon: string; resonance_count: number }[];
   viewsByDay: { day: string; views: number }[];
   totalViews: number;
+  stats: StatRow[];
+  messages: OwnerMessage[];
 }
 
 const card = 'rounded-3xl border border-white/10 bg-white/[0.035] p-6';
@@ -168,6 +174,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const totalResonance = data.stars.reduce((s, x) => s + x.resonance_count, 0);
   const topStars = [...data.stars].filter((s) => s.resonance_count > 0).sort((a, b) => b.resonance_count - a.resonance_count).slice(0, 5);
 
+  const pendingMessages = data.messages.filter((m) => m.status === 'pending').length;
   const hasPlanet = !!profile && hasClaimedUsername(profile.username) && data.stars.length > 0;
   const planetUrl = profile ? `${origin}/${profile.username}` : '';
 
@@ -257,6 +264,14 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   >
                     {isPublished ? t('dash.live') : t('dash.draft')}
                   </span>
+                  {pendingMessages > 0 ? (
+                    <a
+                      href="#guestbook"
+                      className="rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/30"
+                    >
+                      {t('dash.newMessages', { count: pendingMessages })}
+                    </a>
+                  ) : null}
                 </div>
                 <div className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-start">
                   <Link
@@ -455,6 +470,19 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                   ) : null}
                 </section>
               </div>
+            </div>
+
+            <div className="mt-8">
+              <AnalyticsPanel
+                stats={data.stats}
+                stars={data.stars}
+                links={profile.links}
+                color={profile.planetColor}
+              />
+            </div>
+
+            <div className="mt-8 scroll-mt-6" id="guestbook">
+              <GuestbookPanel initialMessages={data.messages} initialEnabled={profile.guestbookEnabled} />
             </div>
           </>
         )}

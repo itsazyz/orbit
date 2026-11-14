@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   const since = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
 
-  const [{ data: profile }, { data: stars }, { data: views }, { data: totals }] = await Promise.all([
+  const [{ data: profile }, { data: stars }, { data: views }, { data: totals }, { data: stats }, { data: messages }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('stars')
@@ -34,6 +34,17 @@ export default async function DashboardPage() {
       .gte('day', since)
       .order('day', { ascending: true }),
     supabase.from('planet_views_daily').select('views').eq('profile_id', user.id),
+    supabase
+      .from('planet_stats_daily')
+      .select('day, metric, dim, count')
+      .eq('profile_id', user.id)
+      .gte('day', since),
+    supabase
+      .from('planet_messages')
+      .select('id, author_name, body, status, created_at')
+      .eq('profile_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(200),
   ]);
 
   const data: DashboardData = {
@@ -53,11 +64,15 @@ export default async function DashboardPage() {
           isPublished: profile.is_published,
           showInExplore: profile.show_in_explore,
           linksCount: parseProfileLinks(profile.links).length,
+          links: parseProfileLinks(profile.links),
+          guestbookEnabled: profile.guestbook_enabled,
         }
       : null,
     stars: stars ?? [],
     viewsByDay: views ?? [],
     totalViews: (totals ?? []).reduce((sum, row) => sum + (row.views ?? 0), 0),
+    stats: stats ?? [],
+    messages: messages ?? [],
   };
 
   return <DashboardClient data={data} />;

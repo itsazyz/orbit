@@ -18,6 +18,9 @@ export interface AdminStats {
   viewsToday: number;
   signups7d: number;
   totalResonance: number;
+  openReports: number;
+  bannedUsers: number;
+  totalMessages: number;
 }
 
 export interface AdminDashboardPayload {
@@ -67,6 +70,9 @@ export async function loadAdminDashboard(
       viewsToday: num(stats.viewsToday),
       signups7d: num(stats.signups7d),
       totalResonance: num(stats.totalResonance),
+      openReports: num(stats.openReports),
+      bannedUsers: num(stats.bannedUsers),
+      totalMessages: num(stats.totalMessages),
     },
     ...config,
     users: (overview.users ?? []).map((u) => ({ ...u, email: u.email ?? '—' })),

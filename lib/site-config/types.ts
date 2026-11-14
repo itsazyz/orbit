@@ -70,6 +70,7 @@ export interface AdminUserRow {
   starCount: number;
   createdAt: string;
   lastSignInAt?: string | null;
+  isBanned?: boolean;
 }
 
 export interface AdminPlanetRow {
@@ -81,6 +82,7 @@ export interface AdminPlanetRow {
   planetColor: string;
   starCount: number;
   musicEnabled: boolean;
+  isBanned?: boolean;
   views?: number;
   createdAt: string;
   updatedAt: string;

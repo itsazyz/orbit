@@ -15,7 +15,30 @@ Bilingual (Arabic / English, full RTL), built on Next.js 14 + Supabase.
 | `/create` | 4-step wizard: identity (live username check) → planet design → stars (with prompts, edit, reorder) → links & music. Live preview, autosaved draft. |
 | `/dashboard` | Visits (30-day chart), resonance, share kit (copy, WhatsApp, X, story image, QR), publish / Explore toggles, account deletion. |
 | `/explore` | Gallery of public planets with search. |
-| `/orbit-control` | Admin: stats, users, planets, homepage CMS, site settings (maintenance, announcement, sign-ups). |
+| `/orbit-control` | Admin: stats, moderation (reports, bans, blocked words), users, planets, homepage CMS, site settings. |
+
+### v2.1 features
+
+* **3D planet** — `components/planet/Planet3D.tsx` renders a procedural WebGL
+  shader (`lib/planet/shader.ts`): lit sphere, surface per style (bands,
+  craters, oceans, crystal, lava, ice, storms, neon, metal…), clouds,
+  atmosphere glow and a real 3D ring. No dependencies; pauses off-screen;
+  falls back to the CSS planet without WebGL.
+* **Warp intro** — `WarpIntro.tsx`, once per planet per session, skippable,
+  off for reduced motion and for the owner.
+* **Constellations** — stars sharing a category are joined by lines that read
+  each star's live CSS animation progress, so they stay in sync.
+* **Rich stars** — photo, gallery (up to 4), YouTube or Spotify per star
+  (`lib/media.ts`, bucket `star-media`, images downscaled in the browser).
+* **Guestbook** — visitors post through `submit_planet_message()` (rate
+  limited per anonymous daily fingerprint, blocked words auto-hidden); owners
+  approve/hide/delete from the dashboard.
+* **Moderation** — visitor reports, admin bans (banned planets vanish from all
+  public reads via RLS), and an admin-editable blocked-word list enforced by
+  triggers.
+* **Analytics** — `/api/track` adds country (Vercel edge header) and device,
+  detects the source (`?s=` tag → in-app browser → referrer) and stores daily
+  counters only (`planet_stats_daily`).
 
 ## Architecture
 
@@ -47,7 +70,7 @@ Bilingual (Arabic / English, full RTL), built on Next.js 14 + Supabase.
 ## Setup
 
 1. Create a Supabase project and run `supabase/migrations/0001_orbit_baseline.sql`
-   in the SQL editor (or `supabase db push`).
+   then `0002_orbit_features.sql` in the SQL editor (or `supabase db push`).
 2. Make yourself an admin:
    ```sql
    insert into private.admins (email) values ('you@example.com');

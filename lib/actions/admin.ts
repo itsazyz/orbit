@@ -144,3 +144,73 @@ export async function getAdminDashboardAction(): Promise<DashboardResult> {
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Moderation
+// ---------------------------------------------------------------------------
+
+export interface AdminReport {
+  id: string;
+  reason: 'spam' | 'offensive' | 'impersonation' | 'other';
+  details: string | null;
+  status: string;
+  createdAt: string;
+  profileId: string;
+  username: string;
+  displayName: string;
+  isBanned: boolean;
+  messageId: string | null;
+  messageAuthor: string | null;
+  messageBody: string | null;
+  messageStatus: string | null;
+}
+
+export async function getModerationAction(): Promise<
+  { ok: true; reports: AdminReport[]; blockedWords: string[] } | { ok: false; error: string }
+> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+
+  const [reportsRes, configRes] = await Promise.all([
+    gate.supabase.rpc('admin_reports'),
+    gate.supabase.from('site_config').select('value').eq('key', 'moderation').maybeSingle(),
+  ]);
+  if (reportsRes.error) return { ok: false, error: reportsRes.error.message };
+
+  const words = (configRes.data?.value as { blockedWords?: unknown } | undefined)?.blockedWords;
+  return {
+    ok: true,
+    reports: (reportsRes.data ?? []) as AdminReport[],
+    blockedWords: Array.isArray(words) ? words.filter((w): w is string => typeof w === 'string') : [],
+  };
+}
+
+export async function setReportStatus(reportId: string, status: 'resolved' | 'dismissed'): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.from('reports').update({ status }).eq('id', reportId);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function hideMessageAsAdmin(messageId: string): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.from('planet_messages').update({ status: 'hidden' }).eq('id', messageId);
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+export async function setUserBanned(profileId: string, banned: boolean): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+  const { error } = await gate.supabase.from('profiles').update({ is_banned: banned }).eq('id', profileId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath('/explore');
+  return { ok: true };
+}
+
+export async function saveBlockedWords(words: string[]): Promise<ActionResult> {
+  const clean = Array.from(
+    new Set(words.map((w) => w.trim().toLowerCase()).filter((w) => w.length > 1 && w.length <= 60))
+  ).slice(0, 2000);
+  return upsertSiteConfig('moderation', { blockedWords: clean });
+}

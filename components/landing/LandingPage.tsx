@@ -42,6 +42,7 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
     title,
     icon: DEMO_ICONS[i % DEMO_ICONS.length]!,
     visualType: DEMO_SHAPES[i % DEMO_SHAPES.length]!,
+    category: i % 3 === 0 ? 'passion' : i % 3 === 1 ? 'value' : null,
   }));
 
   const showStats = !!stats && stats.planets >= 3;
@@ -161,6 +162,8 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
               stars={demoStars}
               labelMinScale={0.55}
               planetSize={140}
+              render3d
+              seed="orbit-landing"
             />
           </motion.div>
         </div>

@@ -313,7 +313,8 @@
       "planets": "Planets",
       "presets": "Visual presets",
       "homepage": "Homepage",
-      "settings": "Site settings"
+      "settings": "Site settings",
+      "moderation": "Moderation"
     },
     "stats": {
       "users": "Registered users",
@@ -323,7 +324,10 @@
       "signups7d": "Sign-ups (7 days)",
       "views": "Total visits",
       "viewsToday": "Visits today",
-      "resonance": "Resonance taps"
+      "resonance": "Resonance taps",
+      "openReports": "Open reports",
+      "messages": "Guestbook messages",
+      "banned": "Banned users"
     },
     "overview": {
       "recentTitle": "Recent planets",
@@ -346,7 +350,10 @@
       "unpublish": "Unpublish",
       "delete": "Delete",
       "confirmDelete": "Permanently delete {email} and their planet?",
-      "deleted": "User deleted."
+      "deleted": "User deleted.",
+      "ban": "Ban",
+      "unban": "Unban",
+      "banned": "Banned"
     },
     "planets": {
       "title": "All planets",
@@ -441,6 +448,20 @@
       "accessDeniedMessage": "This page is private. Set ORBIT_ADMIN_EMAIL in Vercel to your account email ({status}).",
       "envServiceRole": "SUPABASE_SERVICE_ROLE_KEY — Supabase → Settings → API → service_role",
       "envAdminEmail": "ORBIT_ADMIN_EMAIL — your login email"
+    },
+    "moderation": {
+      "reportsTitle": "Reports",
+      "reportsDesc": "Open reports from visitors. Banning hides the planet everywhere until you unban it.",
+      "noReports": "No open reports.",
+      "hideMessage": "Hide message",
+      "resolve": "Mark resolved",
+      "dismiss": "Dismiss",
+      "done": "Done.",
+      "wordsTitle": "Blocked words",
+      "wordsDesc": "One word or phrase per line. Planets and stars containing them can't be saved; guestbook messages containing them are hidden automatically.",
+      "wordsPlaceholder": "one word per line",
+      "wordsSave": "Save list",
+      "wordsSaved": "Blocked words saved."
     }
   },
   "planet": {
@@ -474,7 +495,32 @@
     "starsCount": "{count} stars",
     "starOne": "1 star",
     "links": "Links",
-    "poweredBy": "Made with ORBIT"
+    "poweredBy": "Made with ORBIT",
+    "entering": "Entering {name}'s universe",
+    "guestbook": "Guestbook",
+    "guestbookTitle": "Guestbook",
+    "guestbookSubtitle": "Leave {name} a few words.",
+    "guestbookEmpty": "No messages yet. Be the first.",
+    "guestbookName": "Your name",
+    "guestbookMessage": "Write something kind…",
+    "guestbookSend": "Send",
+    "guestbookSent": "Sent. It will appear once {name} approves it.",
+    "guestbookClosed": "This guestbook is closed.",
+    "guestbookRateLimited": "Too many messages for today. Try again tomorrow.",
+    "guestbookModerated": "Messages appear after approval.",
+    "genericError": "Something went wrong. Please try again.",
+    "report": "Report this planet",
+    "reportTitle": "Report this planet",
+    "reportMessage": "Report this message",
+    "reportDetails": "Anything we should know? (optional)",
+    "reportSend": "Send report",
+    "reportSent": "Thanks. Our team will review it.",
+    "reasons": {
+      "spam": "Spam",
+      "offensive": "Offensive",
+      "impersonation": "Impersonation",
+      "other": "Other"
+    }
   },
   "share": {
     "title": "Share your universe",
@@ -529,7 +575,65 @@
     "checkBio": "Write a one-line bio",
     "checkLinks": "Add your social links",
     "checkShare": "Share your link once",
-    "home": "Home"
+    "home": "Home",
+    "analyticsTitle": "Analytics",
+    "period7": "7 days",
+    "period30": "30 days",
+    "analyticsEmpty": "No visits in this period yet. Share your link and the numbers will show up here.",
+    "sources": "Where visitors come from",
+    "countries": "Countries",
+    "devices": "Devices",
+    "shares": "Shared by visitors",
+    "topStarOpens": "Most opened stars",
+    "topLinks": "Most clicked links",
+    "noData": "Nothing yet.",
+    "unknownCountry": "Unknown",
+    "analyticsPrivacy": "Only daily totals are stored, never who visited",
+    "visitsInPeriod": "visits in this period",
+    "source": {
+      "instagram": "Instagram",
+      "whatsapp": "WhatsApp",
+      "x": "X",
+      "tiktok": "TikTok",
+      "snapchat": "Snapchat",
+      "telegram": "Telegram",
+      "linkedin": "LinkedIn",
+      "facebook": "Facebook",
+      "google": "Google",
+      "youtube": "YouTube",
+      "qr": "QR code",
+      "story": "Story image",
+      "explore": "ORBIT Explore",
+      "orbit": "ORBIT",
+      "direct": "Direct / unknown",
+      "other": "Other sites"
+    },
+    "device": {
+      "mobile": "Mobile",
+      "tablet": "Tablet",
+      "desktop": "Desktop"
+    },
+    "shareChannel": {
+      "copy": "Copied link",
+      "native": "Share sheet",
+      "whatsapp": "WhatsApp",
+      "x": "X",
+      "story": "Story",
+      "qr": "QR"
+    },
+    "guestbookTitle": "Guestbook",
+    "guestbookHint": "Visitors' messages wait here until you approve them.",
+    "guestbookEnabled": "Guestbook on",
+    "newMessages": "{count} new messages",
+    "msg": {
+      "pending": "Waiting",
+      "approved": "Shown",
+      "hidden": "Hidden",
+      "empty": "Nothing here.",
+      "approve": "Approve",
+      "hide": "Hide",
+      "delete": "Delete"
+    }
   },
   "wizard": {
     "titleNew": "Build your universe",
@@ -611,7 +715,18 @@
     "errMaxStars": "A universe can hold up to 20 stars.",
     "errSave": "Couldn't save. Please try again.",
     "errNotSignedIn": "Your session expired. Sign in again.",
-    "publishedTitle": "Your universe is live ✦"
+    "publishedTitle": "Your universe is live ✦",
+    "media": "Media (optional)",
+    "mediaNone": "None",
+    "mediaImage": "Photos",
+    "mediaUpload": "Add photo",
+    "mediaUploading": "Uploading…",
+    "mediaImageHint": "Up to 4 photos. Two or more become a swipeable gallery.",
+    "mediaTooLarge": "That image is too large (max 5 MB).",
+    "mediaUploadFailed": "Upload failed. Try another image.",
+    "mediaInvalid": "That link isn't recognized.",
+    "mediaAttach": "Attach",
+    "errBlocked": "Some words aren't allowed. Please edit your text."
   },
   "starKinds": {
     "passion": "Passion",

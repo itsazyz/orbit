@@ -57,6 +57,7 @@ export async function savePlanet(
       visual_type: star.visualType || 'sparkle',
       category: star.category,
       link_url: star.linkUrl.trim() || null,
+      media: star.media,
       sort_order: index,
       orbit_speed: 1,
       ...legacyStarColumns(index, state.stars.length),

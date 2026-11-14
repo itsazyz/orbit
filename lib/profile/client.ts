@@ -4,9 +4,11 @@ import type {
   PlanetAtmosphere,
   ProfileLink,
   SpaceBackground,
+  StarMedia,
   UniverseMood,
 } from '@/types/database';
 import { parseProfileLinks } from '@/lib/links';
+import { parseStarMedia } from '@/lib/media';
 import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
 
 /** A real username was chosen (not the placeholder created at sign-up). */
@@ -44,6 +46,7 @@ export interface EditorStar {
   visualType: string;
   category: string | null;
   linkUrl: string;
+  media: StarMedia | null;
 }
 
 export interface EditorState {
@@ -99,7 +102,7 @@ export async function loadPlanetForEditor(
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('stars')
-      .select('id, title, content, icon, visual_type, category, link_url')
+      .select('id, title, content, icon, visual_type, category, link_url, media')
       .eq('profile_id', user.id)
       .order('sort_order', { ascending: true }),
   ]);
@@ -137,6 +140,7 @@ export async function loadPlanetForEditor(
         visualType: s.visual_type,
         category: s.category,
         linkUrl: s.link_url ?? '',
+        media: parseStarMedia(s.media),
       })),
     },
   };
