@@ -144,7 +144,7 @@ export function WarpIntro({ color, label, storageKey, disabled, onDone }: WarpIn
 
   return (
     <div
-      className="warp-overlay fixed inset-0 z-[90] bg-[#03040a]"
+      className="warp-overlay fixed inset-0 z-[120] bg-[#03040a]"
       style={{
         opacity: state === 'fading' ? 0 : 1,
         transition: `opacity ${FADE}ms ease-out`,

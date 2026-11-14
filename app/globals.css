@@ -246,3 +246,13 @@ button.orbit-star:focus-visible,
   to { opacity: 1; transform: scale(1); }
 }
 .animate-universe-arrive { animation: universe-arrive 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Letter-spacing breaks Arabic letter joining — fade only in RTL. */
+@keyframes warp-label-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+[dir='rtl'] .warp-label {
+  letter-spacing: 0 !important;
+  animation-name: warp-label-fade;
+}
