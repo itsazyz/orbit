@@ -71,7 +71,14 @@
     "namePlaceholder": "بماذا نناديك؟",
     "signupsClosed": "التسجيل الجديد مغلق حالياً.",
     "passwordMismatch": "كلمتا المرور غير متطابقتين.",
-    "passwordShort": "استخدم 8 أحرف على الأقل."
+    "passwordShort": "استخدم 8 أحرف على الأقل.",
+    "newPasswordTitle": "عيّن كلمة مرور جديدة",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+    "savePassword": "احفظ كلمة المرور",
+    "passwordUpdated": "تم تحديث كلمة المرور. ننقلك للوحتك…",
+    "resetLinkExpired": "رابط الاستعادة انتهت صلاحيته أو فُتح في متصفح مختلف.",
+    "requestNewLink": "أرسل رابط استعادة جديد"
   },
   "create": {
     "stepOf": "الخطوة {step} من {total}",

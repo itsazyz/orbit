@@ -71,7 +71,14 @@
     "namePlaceholder": "What should we call you?",
     "signupsClosed": "New sign-ups are currently closed.",
     "passwordMismatch": "Passwords do not match.",
-    "passwordShort": "Use at least 8 characters."
+    "passwordShort": "Use at least 8 characters.",
+    "newPasswordTitle": "Set a new password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "savePassword": "Save password",
+    "passwordUpdated": "Password updated. Taking you to your dashboard…",
+    "resetLinkExpired": "This reset link has expired or was opened in a different browser.",
+    "requestNewLink": "Send a new reset link"
   },
   "create": {
     "stepOf": "Step {step} of {total}",
