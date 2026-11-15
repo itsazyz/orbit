@@ -433,6 +433,12 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                     {data.email}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href="/auth/update-password"
+                      className="rounded-full border border-white/15 px-4 py-2 text-sm hover:bg-white/10"
+                    >
+                      {t('dash.changePassword')}
+                    </Link>
                     <button
                       type="button"
                       onClick={signOut}

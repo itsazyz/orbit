@@ -640,7 +640,8 @@
       "approve": "Approve",
       "hide": "Hide",
       "delete": "Delete"
-    }
+    },
+    "changePassword": "Change password"
   },
   "wizard": {
     "titleNew": "Build your universe",

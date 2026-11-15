@@ -62,9 +62,28 @@ function persistLanguage(response: NextResponse, lang: 'ar' | 'en' | null) {
   return response;
 }
 
+/**
+ * Supabase falls back to the project's Site URL (the bare origin) when an
+ * email link's redirect isn't on its allow-list, so auth codes can arrive as
+ * /?code=…. Hand those to the callback route instead of dropping them.
+ */
+function forwardStrayAuthCode(request: NextRequest): NextResponse | null {
+  const { pathname, searchParams } = request.nextUrl;
+  const code = searchParams.get('code');
+  if (pathname !== '/' || !code) return null;
+  const url = request.nextUrl.clone();
+  url.pathname = '/auth/callback';
+  url.search = '';
+  url.searchParams.set('code', code);
+  return NextResponse.redirect(url);
+}
+
 export async function updateSession(request: NextRequest) {
   const canonicalRedirect = redirectToCanonicalPath(request);
   if (canonicalRedirect) return canonicalRedirect;
+
+  const strayCode = forwardStrayAuthCode(request);
+  if (strayCode) return strayCode;
 
   const detectedLang = detectLanguage(request);
   const response = await refreshSession(request);
