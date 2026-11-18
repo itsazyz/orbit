@@ -15,9 +15,8 @@ import {
   VolumeX,
   X,
 } from 'lucide-react';
-import { UniverseBackground } from '@/components/planet/PlanetRenderer';
+import { SpaceBackdrop } from '@/components/universe/SpaceBackdrop';
 import { StarsBackground } from '@/components/universe/StarsBackground';
-import { CosmicDust } from '@/components/universe/CosmicDust';
 import { OrbitStage } from '@/components/universe/OrbitStage';
 import { LinkIcon } from '@/components/links/LinkIcon';
 import { SharePanel } from '@/components/share/SharePanel';
@@ -29,7 +28,7 @@ import { trackPlanet } from '@/lib/track';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/context';
 import { getLinkMeta, linkDisplayText } from '@/lib/links';
-import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
+import { lookFromProfile } from '@/lib/planet/design';
 import type { PublicPlanet } from '@/lib/planet/public';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +47,7 @@ function safeStorage(kind: 'local' | 'session') {
 export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
   const { profile, viewerIsOwner, isLive } = planet;
   const { t, dir } = useLanguage();
+  const look = useMemo(() => lookFromProfile(profile), [profile]);
   const supabase = useMemo(() => createClient(), []);
 
   const [stars, setStars] = useState(planet.stars);
@@ -221,9 +221,14 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
         onDone={() => setArrived(true)}
       />
       <div className="fixed inset-0 z-0">
-        <UniverseBackground mood={profile.universe_mood} spaceBackground={profile.space_background} />
-        <StarsBackground seed={profile.username} count={90} />
-        <CosmicDust seed={`${profile.username}-dust`} count={28} color={`${profile.planet_color}66`} />
+        <SpaceBackdrop
+          background={look.spaceBackground}
+          mood={look.mood}
+          color={look.color}
+          color2={look.color2}
+          seed={profile.username}
+        />
+        <StarsBackground seed={profile.username} count={look.spaceBackground === 'void' ? 50 : 80} />
       </div>
 
       {musicEnabled ? (
@@ -274,21 +279,12 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
         )}
       >
         <OrbitStage
-          planet={{
-            color: profile.planet_color,
-            surfaceStyle: normalizePlanetSurface(profile.planet_surface_style),
-            atmosphere: profile.planet_atmosphere,
-            glow: profile.planet_glow,
-            hasRing: profile.planet_has_ring,
-            mood: profile.universe_mood,
-            spaceBackground: profile.space_background,
-          }}
+          planet={look}
           stars={orbitStars}
           onSelect={stars.length ? setSelected : undefined}
           selectedId={current?.id ?? null}
           paused={selected !== null}
           render3d
-          seed={profile.username}
         />
       </section>
 
@@ -573,9 +569,7 @@ export function PublicUniverseView({ planet }: PublicUniverseViewProps) {
               username={profile.username}
               displayName={name}
               bio={profile.bio}
-              planetColor={profile.planet_color}
-              hasRing={profile.planet_has_ring}
-              mood={profile.universe_mood}
+              look={look}
               starTitles={stars.map((s) => s.title)}
             />
             <p className="mt-5 text-center text-xs text-white/45">{t('share.bioTip')}</p>

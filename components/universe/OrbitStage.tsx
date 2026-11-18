@@ -1,27 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type {
-  PlanetAtmosphere,
-  PlanetSurfaceStyle,
-  SpaceBackground,
-  UniverseMood,
-} from '@/types/database';
+import type { PlanetLook } from '@/lib/planet/design';
 import { PlanetVisual } from '@/components/planet/Planet3D';
 import { StarShape } from '@/components/universe/StarShape';
 import { STAR_TYPE_COLORS } from '@/lib/universe/constants';
 import { layoutOrbit, ORBIT_RINGS, STAGE_SIZE } from '@/lib/universe/orbit-layout';
 import { cn } from '@/lib/utils';
 
-export interface OrbitPlanet {
-  color: string;
-  surfaceStyle: PlanetSurfaceStyle;
-  atmosphere: PlanetAtmosphere;
-  glow: number;
-  hasRing: boolean;
-  mood: UniverseMood;
-  spaceBackground: SpaceBackground;
-}
+export type OrbitPlanet = PlanetLook;
 
 export interface OrbitStar {
   id: string;
@@ -47,7 +34,6 @@ interface OrbitStageProps {
   render3d?: boolean;
   /** Draw constellation lines between stars of the same category */
   constellations?: boolean;
-  seed?: string;
 }
 
 /**
@@ -67,7 +53,6 @@ export function OrbitStage({
   planetSize = 150,
   render3d = false,
   constellations = true,
-  seed,
 }: OrbitStageProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
@@ -197,18 +182,7 @@ export function OrbitStage({
         ) : null}
 
         <div className="orbit-planet">
-          <PlanetVisual
-            color={planet.color}
-            surfaceStyle={planet.surfaceStyle}
-            atmosphere={planet.atmosphere}
-            glow={planet.glow}
-            hasRing={planet.hasRing}
-            mood={planet.mood}
-            spaceBackground={planet.spaceBackground}
-            size={planetSize}
-            seed={seed}
-            render3d={render3d}
-          />
+          <PlanetVisual look={planet} size={planetSize} render3d={render3d} />
         </div>
 
         {stars.map((star, index) => {

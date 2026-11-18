@@ -50,13 +50,7 @@ function detectSource(tag: unknown, ref: unknown, ua: string, ownHost: string): 
 
   const host = typeof ref === 'string' ? hostOf(ref) : '';
   if (!host) return 'direct';
-  if (host === ownHost) {
-    try {
-      return new URL(ref as string).pathname.startsWith('/explore') ? 'explore' : 'orbit';
-    } catch {
-      return 'orbit';
-    }
-  }
+  if (host === ownHost) return 'orbit';
   if (/instagram\.com$/.test(host)) return 'instagram';
   if (/(^|\.)t\.co$|twitter\.com$|(^|\.)x\.com$/.test(host)) return 'x';
   if (/whatsapp\.com$|(^|\.)wa\.me$/.test(host)) return 'whatsapp';

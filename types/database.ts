@@ -13,8 +13,15 @@ export type UniverseMood =
   | 'minimal';
 /** Planet surface look — see PLANET_SURFACE_CATALOG for the full set */
 export type PlanetSurfaceStyle = string;
-export type PlanetAtmosphere = 'none' | 'thin' | 'thick' | 'stormy';
-export type SpaceBackground = 'deep_space' | 'nebula' | 'aurora' | 'void';
+export type PlanetAtmosphere = 'none' | 'thin' | 'thick' | 'stormy' | 'electric' | 'dusty';
+export type SpaceBackground =
+  | 'deep_space'
+  | 'nebula'
+  | 'aurora'
+  | 'void'
+  | 'galaxy'
+  | 'milkyway'
+  | 'sunrise';
 
 export type LinkType =
   | 'instagram'
@@ -75,6 +82,8 @@ export interface ProfileRow {
   planet_atmosphere: PlanetAtmosphere;
   planet_glow: number;
   planet_has_ring: boolean;
+  /** Extended look — see lib/planet/design.ts (parseDesign) */
+  planet_design: Record<string, unknown>;
   universe_mood: UniverseMood;
   space_background: SpaceBackground;
   music_url: string | null;
@@ -84,7 +93,6 @@ export interface ProfileRow {
   guestbook_enabled: boolean;
   is_banned: boolean;
   is_published: boolean;
-  show_in_explore: boolean;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -115,21 +123,6 @@ export interface PlanetViewsRow {
   profile_id: string;
   day: string;
   views: number;
-}
-
-export interface ExplorePlanetRow {
-  username: string;
-  display_name: string;
-  bio: string | null;
-  planet_color: string;
-  planet_surface_style: PlanetSurfaceStyle;
-  planet_atmosphere: PlanetAtmosphere;
-  planet_glow: number;
-  planet_has_ring: boolean;
-  universe_mood: UniverseMood;
-  space_background: SpaceBackground;
-  published_at: string | null;
-  star_count: number;
 }
 
 type Insertable<Row, Required extends keyof Row> = Partial<Row> & Pick<Row, Required>;
@@ -194,12 +187,7 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: {
-      explore_planets: {
-        Row: ExplorePlanetRow;
-        Relationships: [];
-      };
-    };
+    Views: { [_ in never]: never };
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
       get_public_stats: {

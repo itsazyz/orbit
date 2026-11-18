@@ -1,154 +1,146 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { PlanetAtmosphere, PlanetSurfaceStyle, SpaceBackground, UniverseMood } from '@/types/database';
+import type { PlanetLook } from '@/lib/planet/design';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
-import {
-  FRAGMENT_SHADER,
-  VERTEX_SHADER,
-  atmosphereParams,
-  hexToRgb,
-  seedFromString,
-  surfaceType,
-} from '@/lib/planet/shader';
+import { SPIN_SPEED, createPlanetProgram, drawPlanet, planetExtent, stillTime } from '@/lib/planet/engine';
 
 export interface PlanetVisualProps {
-  color: string;
-  surfaceStyle: PlanetSurfaceStyle;
-  atmosphere: PlanetAtmosphere;
-  glow: number;
-  hasRing: boolean;
-  mood: UniverseMood;
-  spaceBackground: SpaceBackground;
+  look: PlanetLook;
+  /** Planet diameter in CSS px (the canvas is larger to fit halo, rings, moons) */
   size?: number;
-  seed?: string;
   /** Render with WebGL when available (falls back to the CSS planet) */
   render3d?: boolean;
+  /** Animate rotation, clouds and moons */
   spin?: boolean;
+  className?: string;
 }
 
-function compile(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.warn('[planet3d] shader error:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
+/** CSS-only planet for devices without WebGL */
+function FallbackPlanet({ look, size }: { look: PlanetLook; size: number }) {
+  return (
+    <PlanetRenderer
+      color={look.color}
+      surfaceStyle={look.surface}
+      atmosphere={look.atmosphere}
+      glow={look.glow}
+      hasRing={look.ring !== 'none'}
+      mood={look.mood}
+      spaceBackground={look.spaceBackground}
+      size={size}
+      animate
+      spin={look.spin > 0}
+    />
+  );
 }
 
 /**
- * A planet rendered by a procedural WebGL shader: lit sphere, surface from
- * the chosen style, clouds, atmosphere glow and a real 3D ring. Pauses when
- * off-screen; renders one still frame for reduced-motion users; falls back
- * to the CSS planet when WebGL is unavailable or the context is lost.
+ * A live planet: its own WebGL context, rendered at the on-screen size
+ * (transform-aware), slowed down automatically on weak GPUs, paused when
+ * off-screen, a single still frame for reduced-motion users.
  */
-export function PlanetVisual(props: PlanetVisualProps) {
-  const { render3d = true, size = 150 } = props;
+export function PlanetVisual({ look, size = 150, render3d = true, spin = true, className }: PlanetVisualProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
-  const paramsRef = useRef(props);
-  paramsRef.current = props;
+  const lookRef = useRef(look);
+  const spinRef = useRef(spin);
+  const redrawRef = useRef<(() => void) | null>(null);
+  lookRef.current = look;
+  spinRef.current = spin;
 
-  const canvasSize = size * (props.hasRing ? 2.3 : 1.6);
+  const extent = planetExtent(look);
+  const canvasSize = size * extent;
+
+  // Still frames (reduced motion / paused) need a redraw when the look changes.
+  useEffect(() => {
+    redrawRef.current?.();
+  }, [look]);
 
   useEffect(() => {
     if (!render3d || failed) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: true });
+    const gl = canvas.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false });
     if (!gl) {
       setFailed(true);
       return;
     }
-
-    const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
-    if (!vs || !fs) {
-      setFailed(true);
-      return;
-    }
-    const program = gl.createProgram();
+    const program = createPlanetProgram(gl);
     if (!program) {
       setFailed(true);
       return;
     }
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.warn('[planet3d] link error:', gl.getProgramInfoLog(program));
-      setFailed(true);
-      return;
-    }
-    gl.useProgram(program);
 
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(program, 'aPos');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const u = (name: string) => gl.getUniformLocation(program, name);
-    const uTime = u('uTime');
-    const uColor = u('uColor');
-    const uType = u('uType');
-    const uAtmo = u('uAtmo');
-    const uGlow = u('uGlow');
-    const uRing = u('uRing');
-    const uSeed = u('uSeed');
-    const uClouds = u('uClouds');
-    const uScale = u('uScale');
-
-    gl.clearColor(0, 0, 0, 0);
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const maxDpr = Math.min(window.devicePixelRatio || 1, 2);
+    let quality = 1;
     let visible = true;
     let raf = 0;
-    const start = performance.now();
+    let last = performance.now();
+    let elapsed = stillTime(lookRef.current);
+    let rot = 0.9;
+    let frames = 0;
+    let slowFrames = 0;
+    let cssPx = 0;
 
-    const draw = (now: number) => {
-      const p = paramsRef.current;
-      const px = Math.round(p.size! * (p.hasRing ? 2.3 : 1.6) * dpr);
+    const measure = () => {
+      const rect = canvas.getBoundingClientRect();
+      cssPx = Math.max(rect.width, 8);
+    };
+    measure();
+
+    const draw = () => {
+      const l = lookRef.current;
+      if (frames % 30 === 0) measure();
+      const px = Math.max(32, Math.min(1400, Math.round(cssPx * maxDpr * quality)));
       if (canvas.width !== px || canvas.height !== px) {
         canvas.width = px;
         canvas.height = px;
       }
       gl.viewport(0, 0, px, px);
+      gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      const [r, g, b] = hexToRgb(p.color);
-      const { atmo, clouds } = atmosphereParams(p.atmosphere, p.surfaceStyle);
-      gl.uniform1f(uTime, p.spin === false || reduced ? 4 : (now - start) / 1000);
-      gl.uniform3f(uColor, r, g, b);
-      gl.uniform1f(uType, surfaceType(p.surfaceStyle));
-      gl.uniform1f(uAtmo, atmo);
-      gl.uniform1f(uGlow, Math.max(0, Math.min(5, p.glow)) / 5);
-      gl.uniform1f(uRing, p.hasRing ? 1 : 0);
-      gl.uniform1f(uSeed, seedFromString(p.seed ?? p.color));
-      gl.uniform1f(uClouds, clouds);
-      gl.uniform1f(uScale, 1 / (p.hasRing ? 2.3 : 1.6));
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      drawPlanet(program, l, { time: elapsed, rot, px });
     };
 
     const loop = (now: number) => {
-      draw(now);
-      if (!reduced && visible) raf = requestAnimationFrame(loop);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (spinRef.current) {
+        elapsed += dt;
+        rot += dt * (SPIN_SPEED[lookRef.current.spin] ?? 0.11);
+      }
+      // adaptive resolution: drop quality when frames take too long
+      frames += 1;
+      if (frames > 20 && dt > 0.028) slowFrames += 1;
+      if (slowFrames > 12 && quality > 0.55) {
+        quality -= 0.15;
+        slowFrames = 0;
+      }
+      draw();
+      if (visible) raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
+
+    redrawRef.current = () => {
+      if (reduced || !visible) draw();
+    };
+
+    if (reduced) {
+      draw();
+    } else {
+      raf = requestAnimationFrame(loop);
+    }
 
     const io = new IntersectionObserver(([entry]) => {
-      const nowVisible = !!entry?.isIntersecting;
-      if (nowVisible && !visible && !reduced) {
+      const now = !!entry?.isIntersecting;
+      if (now && !visible && !reduced) {
         visible = true;
+        last = performance.now();
         raf = requestAnimationFrame(loop);
-      } else {
-        visible = nowVisible;
+      } else if (!now) {
+        visible = false;
+        cancelAnimationFrame(raf);
       }
     });
     io.observe(canvas);
@@ -160,45 +152,22 @@ export function PlanetVisual(props: PlanetVisualProps) {
     };
     canvas.addEventListener('webglcontextlost', onLost);
 
-    // Redraw a still frame when props change under reduced motion.
-    const redraw = window.setInterval(() => {
-      if (reduced) draw(performance.now());
-    }, 500);
-
     return () => {
       cancelAnimationFrame(raf);
-      window.clearInterval(redraw);
       io.disconnect();
       canvas.removeEventListener('webglcontextlost', onLost);
-      gl.deleteProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteBuffer(buffer);
+      redrawRef.current = null;
+      program.dispose();
     };
   }, [render3d, failed]);
 
-  if (!render3d || failed) {
-    return (
-      <PlanetRenderer
-        color={props.color}
-        surfaceStyle={props.surfaceStyle}
-        atmosphere={props.atmosphere}
-        glow={props.glow}
-        hasRing={props.hasRing}
-        mood={props.mood}
-        spaceBackground={props.spaceBackground}
-        size={size}
-        animate
-        spin={props.spin !== false}
-      />
-    );
-  }
+  if (!render3d || failed) return <FallbackPlanet look={look} size={size} />;
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none block"
+      className={className ?? 'pointer-events-none block'}
       style={{ width: canvasSize, height: canvasSize }}
     />
   );

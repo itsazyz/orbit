@@ -93,7 +93,6 @@ async function updateProfileAsAdmin(
 
   const { error } = await gate.supabase.from('profiles').update(patch).eq('id', profileId);
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/explore');
   return { ok: true };
 }
 
@@ -111,7 +110,6 @@ export async function deleteUserPlanet(profileId: string): Promise<ActionResult>
 
   const { error } = await gate.supabase.rpc('admin_reset_planet', { p_profile_id: profileId });
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/explore');
   return { ok: true };
 }
 
@@ -121,7 +119,6 @@ export async function deleteUserAccount(userId: string): Promise<ActionResult> {
 
   const { error } = await gate.supabase.rpc('admin_delete_user', { p_user_id: userId });
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/explore');
   return { ok: true };
 }
 
@@ -204,7 +201,6 @@ export async function setUserBanned(profileId: string, banned: boolean): Promise
   if (!gate.ok) return gate;
   const { error } = await gate.supabase.from('profiles').update({ is_banned: banned }).eq('id', profileId);
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/explore');
   return { ok: true };
 }
 

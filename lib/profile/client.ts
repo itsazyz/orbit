@@ -10,6 +10,16 @@ import type {
 import { parseProfileLinks } from '@/lib/links';
 import { parseStarMedia } from '@/lib/media';
 import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
+import {
+  DEFAULT_DESIGN,
+  buildLook,
+  normalizeAtmosphere,
+  normalizeBackground,
+  normalizeMood,
+  parseDesign,
+  type PlanetDesign,
+  type PlanetLook,
+} from '@/lib/planet/design';
 
 /** A real username was chosen (not the placeholder created at sign-up). */
 export function hasClaimedUsername(username: string | null | undefined): boolean {
@@ -57,7 +67,8 @@ export interface EditorState {
   planetSurface: string;
   atmosphere: PlanetAtmosphere;
   glow: number;
-  hasRing: boolean;
+  /** Extended look: second colour, rings, moons, light, effects… */
+  design: PlanetDesign;
   mood: UniverseMood;
   spaceBackground: SpaceBackground;
   musicEnabled: boolean;
@@ -74,7 +85,7 @@ export const EMPTY_EDITOR_STATE: EditorState = {
   planetSurface: 'smooth',
   atmosphere: 'thin',
   glow: 3,
-  hasRing: true,
+  design: { ...DEFAULT_DESIGN, ring: 'classic', moons: 1 },
   mood: 'calm',
   spaceBackground: 'deep_space',
   musicEnabled: false,
@@ -124,11 +135,11 @@ export async function loadPlanetForEditor(
       bio: profile.bio ?? '',
       planetColor: profile.planet_color,
       planetSurface: normalizePlanetSurface(profile.planet_surface_style),
-      atmosphere: profile.planet_atmosphere,
+      atmosphere: normalizeAtmosphere(profile.planet_atmosphere),
       glow: profile.planet_glow,
-      hasRing: profile.planet_has_ring,
-      mood: profile.universe_mood,
-      spaceBackground: profile.space_background,
+      design: parseDesign(profile.planet_design, profile.planet_has_ring),
+      mood: normalizeMood(profile.universe_mood),
+      spaceBackground: normalizeBackground(profile.space_background),
       musicEnabled: profile.music_enabled,
       musicUrl: profile.music_url ?? '',
       links: parseProfileLinks(profile.links),
@@ -144,4 +155,20 @@ export async function loadPlanetForEditor(
       })),
     },
   };
+}
+
+/** The full planet look for an editor state (live preview) */
+export function lookFromEditor(state: EditorState): PlanetLook {
+  return buildLook(
+    {
+      color: state.planetColor,
+      surface: state.planetSurface,
+      atmosphere: state.atmosphere,
+      glow: state.glow,
+      mood: state.mood,
+      spaceBackground: state.spaceBackground,
+      seed: state.username || 'preview',
+    },
+    parseDesign(state.design, state.design?.ring !== 'none')
+  );
 }

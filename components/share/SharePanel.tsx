@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Check, Copy, Download, ImageIcon, Loader2, MessageCircle, QrCode, Share2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/context';
 import { renderStoryImage } from '@/lib/share/story-image';
-import type { UniverseMood } from '@/types/database';
+import type { PlanetLook } from '@/lib/planet/design';
 import { cn } from '@/lib/utils';
 
 export interface SharePanelProps {
@@ -12,9 +12,7 @@ export interface SharePanelProps {
   username: string;
   displayName: string;
   bio: string | null;
-  planetColor: string;
-  hasRing: boolean;
-  mood: UniverseMood;
+  look: PlanetLook;
   starTitles: string[];
   className?: string;
   onShared?: () => void;
@@ -60,9 +58,10 @@ export function SharePanel(props: SharePanelProps) {
         displayName: props.displayName,
         username: props.username,
         bio: props.bio,
-        planetColor: props.planetColor,
-        hasRing: props.hasRing,
-        mood: props.mood,
+        planetColor: props.look.color,
+        hasRing: props.look.ring !== 'none',
+        mood: props.look.mood,
+        look: props.look,
         starTitles: props.starTitles,
         url,
         ctaLine: t('planet.ctaTitle'),
@@ -140,7 +139,7 @@ export function SharePanel(props: SharePanelProps) {
       >
         <span
           className="flex h-12 w-9 shrink-0 items-center justify-center rounded-lg"
-          style={{ background: `linear-gradient(180deg, ${props.planetColor}, #0b0d18)` }}
+          style={{ background: `linear-gradient(180deg, ${props.look.color}, #0b0d18)` }}
         >
           {storyBusy ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
         </span>

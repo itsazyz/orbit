@@ -16,6 +16,7 @@ export type PublicPlanetProfile = Pick<
   | 'planet_atmosphere'
   | 'planet_glow'
   | 'planet_has_ring'
+  | 'planet_design'
   | 'universe_mood'
   | 'space_background'
   | 'music_url'
@@ -47,7 +48,7 @@ export interface PublicPlanet {
 }
 
 const PROFILE_COLUMNS =
-  'id, username, display_name, bio, language, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, universe_mood, space_background, music_url, music_enabled, music_volume, published_at, links, is_published, visibility, guestbook_enabled';
+  'id, username, display_name, bio, language, planet_color, planet_surface_style, planet_atmosphere, planet_glow, planet_has_ring, planet_design, universe_mood, space_background, music_url, music_enabled, music_volume, published_at, links, is_published, visibility, guestbook_enabled';
 
 const STAR_COLUMNS = 'id, title, content, icon, category, link_url, visual_type, resonance_count, media';
 

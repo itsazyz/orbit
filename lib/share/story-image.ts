@@ -1,5 +1,7 @@
 import { MOOD_PRESETS } from '@/lib/universe/constants';
 import type { UniverseMood } from '@/types/database';
+import type { PlanetLook } from '@/lib/planet/design';
+import { planetExtent, snapshotPlanet } from '@/lib/planet/engine';
 
 export interface StoryImageInput {
   displayName: string;
@@ -11,6 +13,8 @@ export interface StoryImageInput {
   starTitles: string[];
   url: string;
   ctaLine: string;
+  /** Full look — draws the real WebGL planet instead of a gradient */
+  look?: PlanetLook;
 }
 
 const W = 1080;
@@ -125,24 +129,34 @@ export async function renderStoryImage(input: StoryImageInput): Promise<Blob> {
     ctx.stroke();
     ctx.restore();
   };
-  if (input.hasRing) drawRing(false);
+  const snap = input.look ? snapshotPlanet(input.look, Math.round(R * 2 * planetExtent(input.look))) : null;
+  if (snap) {
+    const side = R * 2 * planetExtent(input.look!);
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 90;
+    ctx.drawImage(snap, cx - side / 2, cy - side / 2, side, side);
+    ctx.restore();
+  } else {
+    if (input.hasRing) drawRing(false);
 
-  // Planet body
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 120;
-  const body = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
-  body.addColorStop(0, '#ffffff');
-  body.addColorStop(0.35, color);
-  body.addColorStop(0.75, color);
-  body.addColorStop(1, '#0b0614');
-  ctx.fillStyle = body;
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+    // Planet body
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 120;
+    const body = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+    body.addColorStop(0, '#ffffff');
+    body.addColorStop(0.35, color);
+    body.addColorStop(0.75, color);
+    body.addColorStop(1, '#0b0614');
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
-  if (input.hasRing) drawRing(true);
+    if (input.hasRing) drawRing(true);
+  }
 
   // Orbiting stars
   const count = Math.max(6, Math.min(14, input.starTitles.length || 8));

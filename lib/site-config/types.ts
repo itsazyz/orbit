@@ -1,3 +1,4 @@
+import type { PlanetDesign } from '@/lib/planet/design';
 import type {
   PlanetAtmosphere,
   PlanetSurfaceStyle,
@@ -39,6 +40,8 @@ export interface HomepageHeroPlanet {
   mood: UniverseMood;
   spaceBackground: SpaceBackground;
   size: number;
+  /** Extended look (rings, moons, second colour…) */
+  design?: Partial<PlanetDesign>;
 }
 
 export interface HomepageContentConfig {

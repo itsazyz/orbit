@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { MOOD_PRESETS } from '@/lib/universe/constants';
+import { autoSecondColor, isHex } from '@/lib/planet/design';
 import type { UniverseMood } from '@/types/database';
 
 export const runtime = 'edge';
@@ -14,6 +15,7 @@ interface OgProfile {
   bio: string | null;
   planet_color: string;
   planet_has_ring: boolean;
+  planet_design: { color2?: string } | null;
   universe_mood: UniverseMood;
 }
 
@@ -28,7 +30,7 @@ async function loadPlanet(username: string) {
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
 
   const profileRes = await fetch(
-    `${url}/rest/v1/profiles?select=id,username,display_name,bio,planet_color,planet_has_ring,universe_mood` +
+    `${url}/rest/v1/profiles?select=id,username,display_name,bio,planet_color,planet_has_ring,planet_design,universe_mood` +
       `&username=eq.${encodeURIComponent(username.toLowerCase())}&is_published=eq.true&visibility=eq.public&limit=1`,
     { headers, next: { revalidate: 300 } }
   );
@@ -48,6 +50,8 @@ export default async function OpengraphImage({ params }: { params: { username: s
   const data = await loadPlanet(params.username).catch(() => null);
 
   const color = data?.profile.planet_color ?? '#7c8cff';
+  const savedColor2 = data?.profile.planet_design?.color2;
+  const color2 = isHex(savedColor2) ? savedColor2 : autoSecondColor(color);
   const mood = MOOD_PRESETS[data?.profile.universe_mood ?? 'calm'] ?? MOOD_PRESETS.calm;
   const username = data?.profile.username ?? params.username;
   const name = data?.profile.display_name;
@@ -145,7 +149,7 @@ export default async function OpengraphImage({ params }: { params: { username: s
             width: 190,
             height: 190,
             borderRadius: 9999,
-            background: `radial-gradient(circle at 32% 28%, #ffffffdd 0%, ${color} 40%, ${color} 68%, #0b0614 100%)`,
+            background: `radial-gradient(circle at 32% 28%, #ffffffdd 0%, ${color} 38%, ${color2} 74%, #0b0614 100%)`,
             boxShadow: `0 0 70px ${color}, 0 0 140px ${color}88`,
           }}
         />
@@ -158,7 +162,7 @@ export default async function OpengraphImage({ params }: { params: { username: s
               width: 340,
               height: 76,
               borderRadius: '50%',
-              border: `3px solid ${color}`,
+              border: `3px solid ${color2}`,
               transform: 'rotate(-22deg)',
               opacity: 0.85,
             }}

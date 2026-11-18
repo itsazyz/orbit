@@ -2,7 +2,13 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
+import { PlanetVisual } from '@/components/planet/Planet3D';
+import { DEFAULT_DESIGN, buildLook } from '@/lib/planet/design';
+
+const LOST_PLANET = buildLook(
+  { color: '#4a4f72', surface: 'cratered', atmosphere: 'none', glow: 1, mood: 'minimal', spaceBackground: 'void', seed: 'lost' },
+  { ...DEFAULT_DESIGN, phase: 'back', moons: 1, color2: '#8a8fb5' }
+);
 import { useLanguage } from '@/lib/i18n/context';
 
 export default function PlanetNotFound() {
@@ -14,18 +20,7 @@ export default function PlanetNotFound() {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center bg-space-void px-6 text-center text-white">
       <div className="mb-8 opacity-80">
-        <PlanetRenderer
-          color="#3b3f5c"
-          surfaceStyle="cratered"
-          atmosphere="none"
-          glow={1}
-          hasRing={false}
-          mood="minimal"
-          spaceBackground="void"
-          size={110}
-          animate
-          spin
-        />
+        <PlanetVisual look={LOST_PLANET} size={110} />
       </div>
       <h1 className="text-balance text-3xl font-semibold">{t('planet.notFoundTitle')}</h1>
       <p className="mx-auto mt-3 max-w-sm text-white/60">{t('planet.notFoundText')}</p>
@@ -42,10 +37,10 @@ export default function PlanetNotFound() {
           {t('planet.notFoundCta')}
         </Link>
         <Link
-          href="/explore"
+          href="/"
           className="rounded-full border border-space-border bg-space-panel px-6 py-3 text-sm hover:bg-space-nebula"
         >
-          {t('planet.explore')}
+          {t('planet.backHome')}
         </Link>
       </div>
     </main>

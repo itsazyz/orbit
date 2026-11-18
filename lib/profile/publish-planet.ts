@@ -3,6 +3,7 @@ import type { Database } from '@/types/database';
 import type { EditorState } from '@/lib/profile/client';
 import { legacyStarColumns } from '@/lib/universe/orbit-layout';
 import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
+import { parseDesign, serializeDesign } from '@/lib/planet/design';
 
 export type SaveResult = { ok: true; username: string } | { ok: false; error: string; code?: string };
 
@@ -18,6 +19,7 @@ export async function savePlanet(
   options: { publish: boolean }
 ): Promise<SaveResult> {
   const username = state.username.trim().toLowerCase();
+  const design = parseDesign(state.design, state.design?.ring !== 'none');
 
   const profilePatch: Database['public']['Tables']['profiles']['Update'] = {
     username,
@@ -27,7 +29,8 @@ export async function savePlanet(
     planet_surface_style: normalizePlanetSurface(state.planetSurface),
     planet_atmosphere: state.atmosphere,
     planet_glow: Math.min(5, Math.max(0, Math.round(state.glow))),
-    planet_has_ring: state.hasRing,
+    planet_has_ring: design.ring !== 'none',
+    planet_design: serializeDesign(design),
     universe_mood: state.mood,
     space_background: state.spaceBackground,
     music_enabled: state.musicEnabled && !!state.musicUrl.trim(),

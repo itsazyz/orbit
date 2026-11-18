@@ -1,12 +1,12 @@
 'use client';
 
-import { UniverseBackground } from '@/components/planet/PlanetRenderer';
+import { useMemo } from 'react';
+import { SpaceBackdrop } from '@/components/universe/SpaceBackdrop';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { OrbitStage } from '@/components/universe/OrbitStage';
 import { LinkIcon } from '@/components/links/LinkIcon';
 import { getLinkMeta } from '@/lib/links';
-import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
-import type { EditorState } from '@/lib/profile/client';
+import { lookFromEditor, type EditorState } from '@/lib/profile/client';
 import { cn } from '@/lib/utils';
 
 interface PlanetPreviewProps {
@@ -18,23 +18,22 @@ interface PlanetPreviewProps {
 
 /** Mirror of the public page, used live while editing. */
 export function PlanetPreview({ state, emptyName, emptyBio, className }: PlanetPreviewProps) {
+  const look = useMemo(() => lookFromEditor(state), [state]);
   return (
     <div className={cn('relative flex flex-col overflow-hidden rounded-[28px] border border-white/10', className)}>
       <div className="absolute inset-0">
-        <UniverseBackground mood={state.mood} spaceBackground={state.spaceBackground} />
-        <StarsBackground seed={state.username || 'preview'} count={50} />
+        <SpaceBackdrop
+          background={look.spaceBackground}
+          mood={look.mood}
+          color={look.color}
+          color2={look.color2}
+          seed={look.seed}
+        />
+        <StarsBackground seed={look.seed} count={40} />
       </div>
       <div className="relative min-h-0 flex-1">
         <OrbitStage
-          planet={{
-            color: state.planetColor,
-            surfaceStyle: normalizePlanetSurface(state.planetSurface),
-            atmosphere: state.atmosphere,
-            glow: state.glow,
-            hasRing: state.hasRing,
-            mood: state.mood,
-            spaceBackground: state.spaceBackground,
-          }}
+          planet={look}
           stars={state.stars.map((s) => ({
             id: s.id,
             title: s.title,
@@ -44,7 +43,6 @@ export function PlanetPreview({ state, emptyName, emptyBio, className }: PlanetP
           }))}
           labelMinScale={0.7}
           render3d
-          seed={state.username || 'preview'}
         />
       </div>
       <div className="relative px-6 pb-6 text-center">

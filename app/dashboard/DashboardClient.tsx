@@ -6,15 +6,29 @@ import { useRouter } from 'next/navigation';
 import { Check, Eye, Pencil, Sparkles, Star, TrendingUp } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/context';
-import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
+import { PlanetVisual } from '@/components/planet/Planet3D';
+import { planetExtent } from '@/lib/planet/engine';
+import { DEFAULT_DESIGN, buildLook, type PlanetLook } from '@/lib/planet/design';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { SharePanel } from '@/components/share/SharePanel';
 import { AnalyticsPanel, type StatRow } from './AnalyticsPanel';
 import { GuestbookPanel, type OwnerMessage } from './GuestbookPanel';
 import { hasClaimedUsername } from '@/lib/profile/client';
-import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
-import type { PlanetAtmosphere, ProfileLink, SpaceBackground, UniverseMood } from '@/types/database';
+import type { ProfileLink } from '@/types/database';
 import { cn, formatCompact } from '@/lib/utils';
+
+const EMPTY_LOOK = buildLook(
+  {
+    color: '#7c8cff',
+    surface: 'crystalline',
+    atmosphere: 'thin',
+    glow: 4,
+    mood: 'futuristic',
+    spaceBackground: 'deep_space',
+    seed: 'dashboard-empty',
+  },
+  { ...DEFAULT_DESIGN, color2: '#6cd9ff', ring: 'ice', moons: 1 }
+);
 
 export interface DashboardData {
   email: string;
@@ -23,14 +37,8 @@ export interface DashboardData {
     displayName: string;
     bio: string | null;
     planetColor: string;
-    planetSurface: string;
-    atmosphere: PlanetAtmosphere;
-    glow: number;
-    hasRing: boolean;
-    mood: UniverseMood;
-    spaceBackground: SpaceBackground;
+    look: PlanetLook;
     isPublished: boolean;
-    showInExplore: boolean;
     linksCount: number;
     links: ProfileLink[];
     guestbookEnabled: boolean;
@@ -92,7 +100,6 @@ export function DashboardClient({ data }: { data: DashboardData }) {
   const profile = data.profile;
 
   const [isPublished, setIsPublished] = useState(profile?.isPublished ?? false);
-  const [showInExplore, setShowInExplore] = useState(profile?.showInExplore ?? true);
   const [savedFlash, setSavedFlash] = useState(false);
   const [shared, setShared] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -118,7 +125,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
     }
   };
 
-  async function updateFlags(patch: { is_published?: boolean; show_in_explore?: boolean }) {
+  async function updateFlags(patch: { is_published?: boolean }) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -197,9 +204,6 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             ORBIT
           </Link>
           <nav className="flex items-center gap-1">
-            <Link href="/explore" className="rounded-full px-3 py-2 text-sm text-white/60 hover:text-white">
-              {t('home.explore')}
-            </Link>
             <button type="button" onClick={signOut} className="rounded-full px-3 py-2 text-sm text-white/60 hover:text-white">
               {t('dash.signOut')}
             </button>
@@ -208,18 +212,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
 
         {!hasPlanet || !profile ? (
           <section className={cn(card, 'mt-10 flex flex-col items-center px-6 py-14 text-center')}>
-            <PlanetRenderer
-              color="#7c8cff"
-              surfaceStyle="crystalline"
-              atmosphere="thin"
-              glow={4}
-              hasRing
-              mood="futuristic"
-              spaceBackground="deep_space"
-              size={110}
-              animate
-              spin
-            />
+            <PlanetVisual look={EMPTY_LOOK} size={84} />
             <h1 className="mt-8 text-3xl font-semibold">{t('dash.emptyTitle')}</h1>
             <p className="mx-auto mt-3 max-w-md text-white/60">{t('dash.emptyText')}</p>
             <Link
@@ -234,18 +227,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
             {/* Hero */}
             <section className={cn(card, 'mt-8 flex flex-col items-center gap-6 sm:flex-row sm:items-center')}>
               <div className="flex h-36 w-44 shrink-0 items-center justify-center">
-                <PlanetRenderer
-                  color={profile.planetColor}
-                  surfaceStyle={normalizePlanetSurface(profile.planetSurface)}
-                  atmosphere={profile.atmosphere}
-                  glow={profile.glow}
-                  hasRing={profile.hasRing}
-                  mood={profile.mood}
-                  spaceBackground={profile.spaceBackground}
-                  size={84}
-                  animate
-                  spin
-                />
+                <PlanetVisual look={profile.look} size={Math.floor(176 / planetExtent(profile.look))} />
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-start">
                 <p className="text-xs uppercase tracking-[0.2em] text-white/45">{t('dash.eyebrow')}</p>
@@ -341,9 +323,7 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                       username={profile.username}
                       displayName={profile.displayName}
                       bio={profile.bio}
-                      planetColor={profile.planetColor}
-                      hasRing={profile.hasRing}
-                      mood={profile.mood}
+                      look={profile.look}
                       starTitles={data.stars.map((s) => s.title)}
                       onShared={markShared}
                     />
@@ -413,16 +393,6 @@ export function DashboardClient({ data }: { data: DashboardData }) {
                       }}
                       label={t('dash.publishedLabel')}
                       hint={t('dash.publishedHint')}
-                    />
-                    <Toggle
-                      checked={showInExplore}
-                      onChange={(next) => {
-                        setShowInExplore(next);
-                        updateFlags({ show_in_explore: next });
-                      }}
-                      label={t('dash.exploreLabel')}
-                      hint={t('dash.exploreHint')}
-                      disabled={!isPublished}
                     />
                   </div>
                 </section>

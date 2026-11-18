@@ -66,6 +66,12 @@ export const BACKGROUND_GRADIENTS: Record<SpaceBackground, string> = {
   aurora:
     'radial-gradient(ellipse at 60% 15%, #20c997aa 0%, #0a4030 30%, #050e14 70%), radial-gradient(ellipse at 30% 70%, #4cc9f066 0%, transparent 40%)',
   void: 'radial-gradient(ellipse at 50% 50%, #121212 0%, #050505 50%, #000000 100%)',
+  galaxy:
+    'radial-gradient(ellipse at 72% 30%, #6d7cff55 0%, #1a1f4a 22%, #070a1c 60%), radial-gradient(ellipse at 20% 80%, #0d1230 0%, #03040c 70%)',
+  milkyway:
+    'linear-gradient(155deg, transparent 30%, #c8c4ff22 45%, #ffd9a822 52%, transparent 66%), radial-gradient(ellipse at 50% 50%, #141832 0%, #04050c 80%)',
+  sunrise:
+    'radial-gradient(ellipse at 35% 115%, #ffb36cee 0%, #ff7a3c66 18%, #2a1230 45%, #07060f 75%)',
 };
 
 /** Extra decorative layers unique to each space background */

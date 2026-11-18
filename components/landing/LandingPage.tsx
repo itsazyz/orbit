@@ -6,22 +6,36 @@ import { ArrowRight, Globe2, Link2, Orbit, Sparkles } from 'lucide-react';
 import { StarsBackground } from '@/components/universe/StarsBackground';
 import { CosmicDust } from '@/components/universe/CosmicDust';
 import { OrbitStage } from '@/components/universe/OrbitStage';
-import { PlanetCard } from '@/components/explore/PlanetCard';
+import { PlanetThumb } from '@/components/planet/PlanetThumb';
 import { useLanguage } from '@/lib/i18n/context';
 import { getHomepageStrings } from '@/lib/site-config/homepage-strings';
-import { normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
+import { PLANET_SURFACE_CATALOG } from '@/lib/universe/planet-surfaces';
+import { DEFAULT_DESIGN, buildLook, parseDesign, type PlanetDesign } from '@/lib/planet/design';
 import type { HomepageContentConfig } from '@/lib/site-config/types';
-import type { ExplorePlanetRow } from '@/types/database';
 import { formatCompact } from '@/lib/utils';
 
 interface LandingPageProps {
   homepage: HomepageContentConfig;
   stats: { planets: number; stars: number } | null;
-  featured: ExplorePlanetRow[];
   signedIn: boolean;
 }
 
 const DEMO_SHAPES = ['sparkle', 'diamond', 'glow', 'comet', 'ring', 'classic'];
+
+const SHOWCASE: Array<{ surface: string; color: string; atmosphere?: string; design: Partial<PlanetDesign> }> = [
+  { surface: 'banded', color: '#e0a96d', design: { color2: '#8b4a2b', ring: 'classic', moons: 1 } },
+  { surface: 'oceanic', color: '#3b9eff', design: { color2: '#5fd38a', moons: 1, effects: ['lights'] } },
+  { surface: 'neon', color: '#7c8cff', atmosphere: 'electric', design: { color2: '#ff5ecf', ring: 'neon' } },
+  { surface: 'volcanic', color: '#ff7a45', atmosphere: 'dusty', design: { color2: '#ffd56c', light: 'red' } },
+  { surface: 'crystalline', color: '#c4b5fd', design: { color2: '#6cd9ff', ring: 'ice' } },
+  { surface: 'eclipse', color: '#ffd56c', atmosphere: 'none', design: { color2: '#ff7eb3' } },
+  { surface: 'forest', color: '#5fd38a', design: { color2: '#2f7fd8', effects: ['caps'], moons: 2 } },
+  { surface: 'hologram', color: '#6cd9ff', atmosphere: 'none', design: { color2: '#c78cff', ring: 'cross' } },
+  { surface: 'lava_veins', color: '#ff9d3c', atmosphere: 'thick', design: { color2: '#ffe08a' } },
+  { surface: 'pearl', color: '#f0abfc', atmosphere: 'thick', design: { color2: '#ffd56c', ring: 'thin' } },
+  { surface: 'cosmic', color: '#c78cff', design: { color2: '#6cd9ff', moons: 1 } },
+  { surface: 'frozen', color: '#9fd8ff', design: { color2: '#3b82f6', effects: ['aurora'], phase: 'back', ring: 'double' } },
+];
 const DEMO_ICONS = ['✦', '♪', '☼', '◉', '★', '☾', '✈', '♡'];
 
 const fadeUp = {
@@ -31,10 +45,22 @@ const fadeUp = {
   transition: { duration: 0.7, ease: 'easeOut' },
 } as const;
 
-export function LandingPage({ homepage, stats, featured, signedIn }: LandingPageProps) {
+export function LandingPage({ homepage, stats, signedIn }: LandingPageProps) {
   const { t, lang } = useLanguage();
   const copy = getHomepageStrings(homepage, lang);
   const hero = homepage.heroPlanet;
+  const heroLook = buildLook(
+    {
+      color: hero.color,
+      surface: hero.surfaceStyle,
+      atmosphere: hero.atmosphere,
+      glow: hero.glow,
+      mood: hero.mood,
+      spaceBackground: hero.spaceBackground,
+      seed: 'orbit-landing',
+    },
+    parseDesign({ ...DEFAULT_DESIGN, ...(hero.design ?? {}) }, hero.hasRing)
+  );
   const startHref = signedIn ? '/create' : '/auth/sign-up';
 
   const demoStars = copy.examples.slice(0, 8).map((title, i) => ({
@@ -65,9 +91,6 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
             {copy.siteName}
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
-            <Link href="/explore" className="rounded-full px-3 py-2 text-sm text-star-dim hover:text-star">
-              {t('home.explore')}
-            </Link>
             <Link
               href={signedIn ? '/dashboard' : '/auth/sign-in'}
               className="rounded-full px-3 py-2 text-sm text-star-dim hover:text-star"
@@ -108,12 +131,12 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
                 {copy.createPlanet}
                 <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               </Link>
-              <Link
-                href="/explore"
+              <a
+                href="#planets"
                 className="inline-flex h-13 items-center gap-2 rounded-full border border-space-border bg-space-panel/70 px-7 text-base text-star backdrop-blur transition hover:bg-space-nebula"
               >
-                {t('home.explore')}
-              </Link>
+                {t('home.seePlanets')}
+              </a>
             </motion.div>
             <motion.p
               initial={{ opacity: 0 }}
@@ -150,20 +173,11 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
             className="order-1 h-[min(48svh,460px)] min-h-[300px] md:order-2 md:h-[540px]"
           >
             <OrbitStage
-              planet={{
-                color: hero.color,
-                surfaceStyle: normalizePlanetSurface(hero.surfaceStyle),
-                atmosphere: hero.atmosphere,
-                glow: hero.glow,
-                hasRing: hero.hasRing,
-                mood: hero.mood,
-                spaceBackground: hero.spaceBackground,
-              }}
+              planet={heroLook}
               stars={demoStars}
               labelMinScale={0.55}
               planetSize={140}
               render3d
-              seed="orbit-landing"
             />
           </motion.div>
         </div>
@@ -199,26 +213,54 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
         </div>
       </section>
 
-      {/* ---------------- FEATURED ---------------- */}
-      {featured.length > 0 ? (
-        <section className="border-t border-space-border px-5 py-24 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <motion.h2 {...fadeUp} className="text-3xl font-light text-star md:text-4xl">
-                {t('home.featuredTitle')}
-              </motion.h2>
-              <Link href="/explore" className="inline-flex items-center gap-2 text-sm text-accent hover:text-star">
-                {t('home.featuredCta')} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-              </Link>
-            </div>
-            <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {featured.slice(0, 8).map((planet) => (
-                <PlanetCard key={planet.username} planet={planet} />
-              ))}
-            </div>
+      {/* ---------------- PLANET SHOWCASE ---------------- */}
+      <section id="planets" className="relative overflow-hidden border-t border-space-border px-5 py-24 md:px-12">
+        <div className="mx-auto max-w-6xl">
+          <motion.div {...fadeUp} className="max-w-2xl">
+            <h2 className="text-balance text-3xl font-light text-star md:text-4xl">{t('home.showcaseTitle')}</h2>
+            <p className="mt-4 text-lg leading-relaxed text-star-dim">{t('home.showcaseText')}</p>
+          </motion.div>
+          <div className="mt-12 grid grid-cols-3 gap-x-2 gap-y-6 sm:grid-cols-4 lg:grid-cols-6">
+            {SHOWCASE.map((item) => {
+              const surface = PLANET_SURFACE_CATALOG.find((s) => s.id === item.surface)!;
+              return (
+                <div key={item.surface} className="flex flex-col items-center text-center">
+                  <PlanetThumb
+                    look={buildLook(
+                      {
+                        color: item.color,
+                        surface: item.surface,
+                        atmosphere: item.atmosphere ?? 'thin',
+                        glow: 3,
+                        mood: 'calm',
+                        spaceBackground: 'deep_space',
+                        seed: `showcase-${item.surface}`,
+                      },
+                      { ...DEFAULT_DESIGN, ...item.design }
+                    )}
+                    size={150}
+                    extent={2.36}
+                    hoverSpin
+                    className="max-w-full"
+                  />
+                  <p className="-mt-3 text-sm text-star">{lang === 'ar' ? surface.labelAr : surface.labelEn}</p>
+                  <p className="text-xs text-star-dim">{lang === 'ar' ? surface.vibeAr : surface.vibeEn}</p>
+                </div>
+              );
+            })}
           </div>
-        </section>
-      ) : null}
+          <div className="mt-12 flex flex-wrap items-center gap-4">
+            <Link
+              href={startHref}
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-accent px-7 text-sm font-medium text-white shadow-lg shadow-accent/25 hover:bg-accent/90"
+            >
+              {t('home.showcaseCta')}
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+            </Link>
+            <p className="text-sm text-star-dim">{t('home.showcaseNote')}</p>
+          </div>
+        </div>
+      </section>
 
       {/* ---------------- FEATURES (admin-editable copy) ---------------- */}
       <section className="border-t border-space-border px-5 py-24 md:px-12">
@@ -287,9 +329,6 @@ export function LandingPage({ homepage, stats, featured, signedIn }: LandingPage
         </Link>
         <div className="relative mt-16 flex flex-wrap items-center justify-center gap-6 text-sm text-star-dim">
           <span className="tracking-[0.28em]">{copy.siteName}</span>
-          <Link href="/explore" className="hover:text-star">
-            {t('home.explore')}
-          </Link>
           <Link href={signedIn ? '/dashboard' : '/auth/sign-in'} className="hover:text-star">
             {signedIn ? t('home.dashboard') : t('nav.signIn')}
           </Link>

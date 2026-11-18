@@ -50,13 +50,14 @@ export const DEFAULT_HOMEPAGE_CONTENT: HomepageContentConfig = {
   },
   heroPlanet: {
     color: '#7c8cff',
-    surfaceStyle: 'smooth',
+    surfaceStyle: 'banded',
     atmosphere: 'thin',
     glow: 4,
     hasRing: true,
     mood: 'calm',
     spaceBackground: 'deep_space',
     size: 160,
+    design: { color2: '#ff9d6c', ring: 'classic', moons: 2, tilt: 16 },
   },
 };
 

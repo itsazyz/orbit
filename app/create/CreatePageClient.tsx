@@ -13,7 +13,6 @@ import {
   Loader2,
   Pencil,
   Plus,
-  Shuffle,
   Trash2,
   X,
 } from 'lucide-react';
@@ -26,13 +25,11 @@ import {
   type EditorState,
 } from '@/lib/profile/client';
 import { savePlanet } from '@/lib/profile/publish-planet';
+import { parseDesign } from '@/lib/planet/design';
 import { LINK_TYPES, MAX_LINKS, getLinkMeta, linkDisplayText, normalizeLinkUrl } from '@/lib/links';
-import { UNIVERSE_THEMES } from '@/lib/universe/themes';
-import { PLANET_COLORS } from '@/lib/universe/constants';
-import { PLANET_SURFACE_CATALOG, normalizePlanetSurface } from '@/lib/universe/planet-surfaces';
 import { STAR_CATEGORIES, STAR_ICONS, STAR_PROMPTS, type StarPrompt } from '@/lib/universe/star-prompts';
-import { PlanetSurfacePicker } from '@/components/create/PlanetSurfacePicker';
-import { AtmospherePicker, BackgroundPicker, MoodPicker, StarShapePicker } from '@/components/create/VisualPickers';
+import { PlanetStudio, StudioMiniPreview } from '@/components/create/PlanetStudio';
+import { StarShapePicker } from '@/components/create/VisualPickers';
 import { MusicPicker } from '@/components/create/MusicPicker';
 import { PlanetPreview } from '@/components/create/PlanetPreview';
 import { StarMediaEditor } from '@/components/create/StarMediaEditor';
@@ -135,6 +132,7 @@ export function CreatePageClient() {
             const parsed = JSON.parse(rawDraft) as EditorState;
             if (JSON.stringify(parsed) !== JSON.stringify(loaded.state)) {
               initial = { ...loaded.state, ...parsed };
+              initial.design = parseDesign(initial.design, initial.design ? initial.design.ring !== 'none' : true);
               setDraftRestored(true);
             }
           } catch {
@@ -270,33 +268,7 @@ export function CreatePageClient() {
     setDraftRestored(false);
   }
 
-  // ---------------- planet helpers ----------------
-  function applyTheme(themeId: string) {
-    const theme = UNIVERSE_THEMES.find((th) => th.id === themeId);
-    if (!theme) return;
-    patch({
-      planetColor: theme.planetColor,
-      planetSurface: theme.planetSurface,
-      atmosphere: theme.atmosphere,
-      glow: theme.glow,
-      hasRing: theme.hasRing,
-      mood: theme.mood,
-      spaceBackground: theme.spaceBackground,
-    });
-  }
 
-  function surpriseMe() {
-    const pick = <T,>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)]!;
-    patch({
-      planetColor: pick(PLANET_COLORS),
-      planetSurface: pick(PLANET_SURFACE_CATALOG).id,
-      atmosphere: pick(['none', 'thin', 'thick', 'stormy'] as const),
-      glow: 2 + Math.floor(Math.random() * 4),
-      hasRing: Math.random() > 0.45,
-      mood: pick(['calm', 'mysterious', 'creative', 'warm', 'futuristic', 'minimal'] as const),
-      spaceBackground: pick(['deep_space', 'nebula', 'aurora', 'void'] as const),
-    });
-  }
 
   // ---------------- star helpers ----------------
   function openStar(prompt?: StarPrompt) {
@@ -516,125 +488,7 @@ export function CreatePageClient() {
           ) : null}
 
           {/* STEP 2 — planet */}
-          {step === 1 ? (
-            <div className="space-y-7">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h1 className="text-3xl font-semibold tracking-tight">{t('wizard.planetTitle')}</h1>
-                  <p className="mt-2 text-white/55">{t('wizard.planetHint')}</p>
-                </div>
-                <button type="button" onClick={surpriseMe} className={cn(chip, 'flex items-center gap-2')}>
-                  <Shuffle size={15} /> {t('wizard.surprise')}
-                </button>
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.themes')}</span>
-                <div className="flex flex-wrap gap-2">
-                  {UNIVERSE_THEMES.map((theme) => (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => applyTheme(theme.id)}
-                      className={cn(chip, 'flex items-center gap-2')}
-                    >
-                      <span className="h-3 w-3 rounded-full" style={{ background: theme.planetColor }} />
-                      {lang === 'ar' ? theme.labelAr : theme.labelEn}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.color')}</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {PLANET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => patch({ planetColor: c })}
-                      aria-label={c}
-                      className={cn(
-                        'h-9 w-9 rounded-full border-2 transition',
-                        state.planetColor.toLowerCase() === c ? 'scale-110 border-white' : 'border-transparent'
-                      )}
-                      style={{ background: c, boxShadow: `0 0 16px ${c}66` }}
-                    />
-                  ))}
-                  <label className="relative flex h-9 items-center gap-2 rounded-full border border-white/12 px-3 text-sm text-white/70">
-                    <input
-                      type="color"
-                      value={state.planetColor}
-                      onChange={(e) => patch({ planetColor: e.target.value })}
-                      className="h-5 w-5 cursor-pointer rounded-full border-0 bg-transparent p-0"
-                    />
-                    <span dir="ltr">{state.planetColor}</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.surface')}</span>
-                <PlanetSurfacePicker
-                  color={state.planetColor}
-                  value={normalizePlanetSurface(state.planetSurface)}
-                  onChange={(v) => patch({ planetSurface: v })}
-                />
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.atmosphere')}</span>
-                <AtmospherePicker
-                  color={state.planetColor}
-                  value={state.atmosphere}
-                  onChange={(v) => patch({ atmosphere: v })}
-                />
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div>
-                  <span className={label}>
-                    {t('wizard.glow')} — {state.glow}
-                  </span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={5}
-                    step={1}
-                    value={state.glow}
-                    onChange={(e) => patch({ glow: Number(e.target.value) })}
-                    className="w-full"
-                    style={{ accentColor: state.planetColor }}
-                  />
-                </div>
-                <div>
-                  <span className={label}>{t('wizard.ring')}</span>
-                  <div className="flex gap-2">
-                    {[true, false].map((on) => (
-                      <button
-                        key={String(on)}
-                        type="button"
-                        onClick={() => patch({ hasRing: on })}
-                        className={cn(chip, state.hasRing === on && 'border-white bg-white text-black hover:bg-white')}
-                      >
-                        {on ? t('wizard.ringOn') : t('wizard.ringOff')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.mood')}</span>
-                <MoodPicker value={state.mood} onChange={(v) => patch({ mood: v })} />
-              </div>
-
-              <div>
-                <span className={label}>{t('wizard.background')}</span>
-                <BackgroundPicker value={state.spaceBackground} onChange={(v) => patch({ spaceBackground: v })} />
-              </div>
-            </div>
-          ) : null}
+          {step === 1 ? <PlanetStudio state={state} patch={patch} /> : null}
 
           {/* STEP 3 — stars */}
           {step === 2 ? (
@@ -1013,6 +867,10 @@ export function CreatePageClient() {
           </div>
         </aside>
       </div>
+
+      {step === 1 && !previewOpen ? (
+        <StudioMiniPreview state={state} onOpen={() => setPreviewOpen(true)} label={t('wizard.preview')} />
+      ) : null}
 
       {/* ---------------- BOTTOM NAV ---------------- */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/5 bg-[#06070e]/90 backdrop-blur-xl">

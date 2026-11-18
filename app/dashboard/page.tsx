@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { parseProfileLinks } from '@/lib/links';
+import { lookFromProfile } from '@/lib/planet/design';
 import { DashboardClient, type DashboardData } from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -55,14 +56,8 @@ export default async function DashboardPage() {
           displayName: profile.display_name,
           bio: profile.bio,
           planetColor: profile.planet_color,
-          planetSurface: profile.planet_surface_style,
-          atmosphere: profile.planet_atmosphere,
-          glow: profile.planet_glow,
-          hasRing: profile.planet_has_ring,
-          mood: profile.universe_mood,
-          spaceBackground: profile.space_background,
+          look: lookFromProfile(profile),
           isPublished: profile.is_published,
-          showInExplore: profile.show_in_explore,
           linksCount: parseProfileLinks(profile.links).length,
           links: parseProfileLinks(profile.links),
           guestbookEnabled: profile.guestbook_enabled,

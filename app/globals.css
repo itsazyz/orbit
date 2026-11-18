@@ -256,3 +256,35 @@ button.orbit-star:focus-visible,
   letter-spacing: 0 !important;
   animation-name: warp-label-fade;
 }
+
+/* ---------- space backdrop + mood ambience ---------- */
+@keyframes backdrop-drift {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.1) translate3d(-1.5%, -1%, 0); }
+}
+@keyframes fog-drift {
+  from { transform: translate3d(-6%, 0, 0) scale(1); }
+  to { transform: translate3d(8%, -4%, 0) scale(1.15); }
+}
+@keyframes sparkle-pop {
+  0%, 100% { transform: scale(0.2) rotate(0deg); opacity: 0; }
+  45% { transform: scale(1) rotate(45deg); opacity: 0.9; }
+  60% { transform: scale(0.8) rotate(60deg); opacity: 0.7; }
+}
+@keyframes ember-rise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10% { opacity: 0.9; }
+  50% { transform: translate3d(var(--sway, 20px), -55vh, 0); }
+  85% { opacity: 0.5; }
+  100% { transform: translate3d(0, -115vh, 0); opacity: 0; }
+}
+@keyframes grid-scroll {
+  from { background-position: 0 0; }
+  to { background-position: 0 56px; }
+}
+@keyframes scan-sweep {
+  0% { top: -15%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 105%; opacity: 0; }
+}

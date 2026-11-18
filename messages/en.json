@@ -498,7 +498,6 @@
     "notFoundTitle": "This planet doesn't exist (yet)",
     "notFoundText": "Nobody has claimed this orbit. It could be yours.",
     "notFoundCta": "Claim it",
-    "explore": "Explore universes",
     "starsCount": "{count} stars",
     "starOne": "1 star",
     "links": "Links",
@@ -527,7 +526,8 @@
       "offensive": "Offensive",
       "impersonation": "Impersonation",
       "other": "Other"
-    }
+    },
+    "backHome": "Back to ORBIT"
   },
   "share": {
     "title": "Share your universe",
@@ -568,8 +568,6 @@
     "settingsTitle": "Planet settings",
     "publishedLabel": "Planet is live",
     "publishedHint": "When off, only you can see your planet.",
-    "exploreLabel": "Show in Explore",
-    "exploreHint": "Let people discover your planet on the Explore page.",
     "saved": "Saved",
     "account": "Account",
     "signOut": "Sign out",
@@ -748,22 +746,10 @@
     "favorite": "Favorite",
     "idea": "Idea"
   },
-  "explore": {
-    "title": "Explore universes",
-    "subtitle": "Real people, mapped as planets. Tap one to step inside.",
-    "search": "Search by name or link",
-    "empty": "No universes here yet. Be the first.",
-    "noResults": "No universes match your search.",
-    "create": "Create yours",
-    "stars": "{count} stars"
-  },
   "home": {
-    "explore": "Explore",
     "dashboard": "My planet",
     "statPlanets": "universes created",
     "statStars": "stars in orbit",
-    "featuredTitle": "Step into someone's universe",
-    "featuredCta": "See all universes",
     "freeNote": "Free. No credit card. Ready in 3 minutes.",
     "howTitle": "Three steps. One link.",
     "how1": "Shape your planet",
@@ -778,10 +764,52 @@
     "faq1q": "Is it free?",
     "faq1a": "Yes. Creating and sharing your universe is free.",
     "faq2q": "Can I keep it private?",
-    "faq2a": "Yes. Unpublish anytime from your dashboard, and choose whether you appear on Explore.",
+    "faq2a": "Yes. Unpublish anytime from your dashboard and your planet goes dark until you switch it back on.",
     "faq3q": "Does it work in Arabic?",
     "faq3a": "Fully. The whole site works in Arabic and English, right-to-left included.",
     "faq4q": "Can I add my social accounts?",
-    "faq4a": "Yes — Instagram, X, TikTok, Snapchat, LinkedIn, GitHub, WhatsApp and more appear under your planet."
+    "faq4a": "Yes — Instagram, X, TikTok, Snapchat, LinkedIn, GitHub, WhatsApp and more appear under your planet.",
+    "seePlanets": "See what a planet can be",
+    "showcaseTitle": "No two planets look alike",
+    "showcaseText": "Thirty-two surfaces, each drawn by its own code. Add rings, moons, a second sun, city lights and a sky of your choice. Hover a planet to spin it.",
+    "showcaseCta": "Design your planet",
+    "showcaseNote": "Free. Takes about two minutes."
+  },
+  "studio": {
+    "hint": "Every choice changes how your planet is drawn. Start from a preset or build it piece by piece.",
+    "presets": "Start from a preset",
+    "tab": {
+      "surface": "Surface",
+      "colors": "Colours",
+      "atmosphere": "Atmosphere",
+      "rings": "Rings & moons",
+      "light": "Light & motion",
+      "universe": "Universe"
+    },
+    "scale": "Pattern size",
+    "scaleBig": "Big shapes",
+    "scaleFine": "Fine detail",
+    "newPattern": "New pattern",
+    "mainColor": "Main colour",
+    "secondColor": "Second colour",
+    "secondHint": "Used for bands, veins, spots and rings",
+    "atmoColor": "Sky colour",
+    "auto": "Auto",
+    "atmosphere": "Atmosphere",
+    "glowNone": "No glow",
+    "glowMax": "Radiant",
+    "ring": "Ring",
+    "moons": "Moons",
+    "noMoons": "None",
+    "moons1": "One moon",
+    "moons2": "Two moons",
+    "moons3": "Three moons",
+    "effects": "Extras",
+    "effectsHint": "Mix as many as you like",
+    "star": "Your star",
+    "phase": "Light angle",
+    "tilt": "Axis tilt",
+    "spin": "Rotation",
+    "moodHint": "Sets the colour of the sky and what drifts across it"
   }
 }
