@@ -186,7 +186,10 @@ export function PlanetStudio({ state, patch }: PlanetStudioProps) {
               type="button"
               role="tab"
               aria-selected={tab === id}
-              onClick={() => setTab(id)}
+              onClick={(e) => {
+                setTab(id);
+                e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+              }}
               className={cn(
                 'shrink-0 rounded-full px-3.5 py-2 text-sm transition',
                 tab === id ? 'bg-white text-black' : 'text-white/60 hover:bg-white/[0.06] hover:text-white'
@@ -209,7 +212,7 @@ export function PlanetStudio({ state, patch }: PlanetStudioProps) {
                 title={label(lang, s)}
                 sub={lang === 'ar' ? s.vibeAr : s.vibeEn}
               >
-                <PlanetThumb look={withLook(bare, { surface: s.id })} size={76} extent={1.75} hoverSpin />
+                <PlanetThumb look={withLook(bare, { surface: s.id })} size={92} extent={1.75} hoverSpin />
               </OptionCard>
             ))}
           </div>
@@ -457,7 +460,7 @@ function OptionCard({
           : 'border-white/[0.07] bg-white/[0.025] hover:border-white/25 hover:bg-white/[0.05]'
       )}
     >
-      <div className={cn('flex items-center justify-center', wide ? 'w-full' : '')}>{children}</div>
+      <div className="flex w-full items-center justify-center">{children}</div>
       <span className="mt-1 line-clamp-1 w-full text-[12px] font-medium text-white/85">{title}</span>
       {sub ? <span className="line-clamp-1 w-full text-[10.5px] text-white/40">{sub}</span> : null}
       {toggle ? (

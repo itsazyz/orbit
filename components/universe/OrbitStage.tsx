@@ -159,7 +159,11 @@ export function OrbitStage({
 
         <div
           className="orbit-planet-glow"
-          style={{ boxShadow: `0 0 140px ${planet.color}40, 0 0 60px ${planet.color}30` }}
+          style={{
+            width: 420,
+            height: 420,
+            background: `radial-gradient(circle, ${planet.color}26 0%, ${planet.color}12 32%, transparent 68%)`,
+          }}
           aria-hidden
         />
 

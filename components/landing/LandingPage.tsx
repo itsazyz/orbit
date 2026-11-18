@@ -241,7 +241,6 @@ export function LandingPage({ homepage, stats, signedIn }: LandingPageProps) {
                     size={150}
                     extent={2.36}
                     hoverSpin
-                    className="max-w-full"
                   />
                   <p className="-mt-3 text-sm text-star">{lang === 'ar' ? surface.labelAr : surface.labelEn}</p>
                   <p className="text-xs text-star-dim">{lang === 'ar' ? surface.vibeAr : surface.vibeEn}</p>

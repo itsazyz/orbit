@@ -91,7 +91,7 @@ export function PlanetThumb({ look, size, extent, hoverSpin = false, className, 
       ref={ref}
       aria-hidden
       className={cn('block', className)}
-      style={{ width: size, height: size }}
+      style={{ width: '100%', maxWidth: size, aspectRatio: '1 / 1' }}
       onPointerEnter={hoverSpin ? () => setHover(true) : undefined}
       onPointerLeave={hoverSpin ? () => setHover(false) : undefined}
     />
