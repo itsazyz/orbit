@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PlanetLook } from '@/lib/planet/design';
 import { PlanetRenderer } from '@/components/planet/PlanetRenderer';
-import { SPIN_SPEED, createPlanetProgram, drawPlanet, planetExtent, stillTime } from '@/lib/planet/engine';
+import { GLKit, SPIN_SPEED, drawPlanet, planetExtent, stillTime, type PlanetProgram } from '@/lib/planet/engine';
 
 export interface PlanetVisualProps {
   look: PlanetLook;
@@ -66,11 +66,13 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
       setFailed(true);
       return;
     }
-    const program = createPlanetProgram(gl);
-    if (!program) {
+    const kit = new GLKit(gl);
+    if (kit.broken) {
       setFailed(true);
       return;
     }
+    // keep drawing the last ready program while a new surface compiles
+    let current: PlanetProgram | null = null;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const maxDpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -83,6 +85,8 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
     let frames = 0;
     let slowFrames = 0;
     let cssPx = 0;
+    let pendingRedraw = false;
+    let pollTimer = 0;
 
     const measure = () => {
       const rect = canvas.getBoundingClientRect();
@@ -92,6 +96,17 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
 
     const draw = () => {
       const l = lookRef.current;
+      const next = kit.planetProgram(l);
+      if (next) current = next;
+      else if (kit.planetFailed(l)) {
+        setFailed(true);
+        return;
+      }
+      if (!current) {
+        pendingRedraw = true;
+        return;
+      }
+      pendingRedraw = !next;
       if (frames % 30 === 0) measure();
       const px = Math.max(32, Math.min(1400, Math.round(cssPx * maxDpr * quality)));
       if (canvas.width !== px || canvas.height !== px) {
@@ -101,7 +116,7 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
       gl.viewport(0, 0, px, px);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      drawPlanet(program, l, { time: elapsed, rot, px });
+      drawPlanet(kit, current, l, { time: elapsed, rot, px });
     };
 
     const loop = (now: number) => {
@@ -122,12 +137,18 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
       if (visible) raf = requestAnimationFrame(loop);
     };
 
+    // still frames (reduced motion / off-screen) poll until a compile finishes
+    const drawStill = () => {
+      window.clearTimeout(pollTimer);
+      draw();
+      if (pendingRedraw) pollTimer = window.setTimeout(drawStill, 120);
+    };
     redrawRef.current = () => {
-      if (reduced || !visible) draw();
+      if (reduced || !visible) drawStill();
     };
 
     if (reduced) {
-      draw();
+      drawStill();
     } else {
       raf = requestAnimationFrame(loop);
     }
@@ -154,10 +175,11 @@ export function PlanetVisual({ look, size = 150, render3d = true, spin = true, c
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(pollTimer);
       io.disconnect();
       canvas.removeEventListener('webglcontextlost', onLost);
       redrawRef.current = null;
-      program.dispose();
+      kit.dispose();
     };
   }, [render3d, failed]);
 

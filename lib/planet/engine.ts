@@ -9,10 +9,10 @@ import {
   ATMO_INDEX,
   BACKDROP_FRAGMENT,
   BACKDROP_INDEX,
-  PLANET_FRAGMENT,
   RING_INDEX,
   SURFACE_INDEX,
   VERTEX_SHADER,
+  planetFragment,
   hexToRgb,
   seedNumbers,
 } from './shader';
@@ -100,88 +100,162 @@ const MOON_ORBITS = [
 ];
 
 const PLANET_UNIFORMS = [
-  'uTime', 'uExtent', 'uPx', 'uC1', 'uC2', 'uAtmoCol', 'uAmbient', 'uSurf', 'uAtmo', 'uGlow', 'uRing',
+  'uTime', 'uExtent', 'uPx', 'uC1', 'uC2', 'uAtmoCol', 'uAmbient', 'uAtmo', 'uGlow',
   'uSeed', 'uVar', 'uDetail', 'uObj', 'uFrame', 'uRingN', 'uRingN2', 'uRingSpin', 'uL1', 'uL2', 'uL1c',
   'uL2c', 'uMoon0', 'uMoon1', 'uMoon2', 'uFx',
 ] as const;
 
 const BACKDROP_UNIFORMS = ['uAspect', 'uBg', 'uBase', 'uAccent', 'uPlanet', 'uPlanet2', 'uSeed', 'uPxB'] as const;
 
+type PlanetU = (typeof PLANET_UNIFORMS)[number];
+type BackdropU = (typeof BACKDROP_UNIFORMS)[number];
+
 export interface GLProgram<U extends string> {
-  gl: WebGLRenderingContext;
   program: WebGLProgram;
-  buffer: WebGLBuffer;
+  shader: WebGLShader;
   loc: Record<U, WebGLUniformLocation | null>;
-  dispose: () => void;
+  state: 'pending' | 'ready' | 'failed';
+  used: number;
 }
 
-function compile(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.warn('[planet] shader error:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
+export type PlanetProgram = GLProgram<PlanetU>;
+export type BackdropProgram = GLProgram<BackdropU>;
+
+const COMPLETION_STATUS_KHR = 0x91b1;
+const MAX_PROGRAMS = 48;
+
+/**
+ * Programs for one WebGL context. Each planet program is specialised for
+ * a surface and ring style (small shaders compile fast everywhere). When
+ * KHR_parallel_shader_compile exists, compiling happens off the main
+ * thread and callers simply get "pending" until the program is ready.
+ */
+export class GLKit {
+  readonly gl: WebGLRenderingContext;
+  private parallel: boolean;
+  private vs: WebGLShader | null;
+  private buffer: WebGLBuffer | null;
+  private planets = new Map<string, PlanetProgram>();
+  private backdrop: BackdropProgram | null = null;
+  broken = false;
+
+  constructor(gl: WebGLRenderingContext) {
+    this.gl = gl;
+    this.parallel = !!gl.getExtension('KHR_parallel_shader_compile');
+    this.vs = gl.createShader(gl.VERTEX_SHADER);
+    this.buffer = gl.createBuffer();
+    if (!this.vs || !this.buffer) {
+      this.broken = true;
+      return;
+    }
+    gl.shaderSource(this.vs, VERTEX_SHADER);
+    gl.compileShader(this.vs);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
   }
-  return shader;
-}
 
-function makeProgram<U extends string>(
-  gl: WebGLRenderingContext,
-  fragment: string,
-  uniforms: readonly U[]
-): GLProgram<U> | null {
-  const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
-  const fs = compile(gl, gl.FRAGMENT_SHADER, fragment);
-  if (!vs || !fs) return null;
-  const program = gl.createProgram();
-  const buffer = gl.createBuffer();
-  if (!program || !buffer) return null;
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.warn('[planet] link error:', gl.getProgramInfoLog(program));
-    return null;
+  private start<U extends string>(fragment: string): GLProgram<U> | null {
+    const { gl } = this;
+    if (!this.vs) return null;
+    const shader = gl.createShader(gl.FRAGMENT_SHADER);
+    const program = gl.createProgram();
+    if (!shader || !program) return null;
+    gl.shaderSource(shader, fragment);
+    gl.compileShader(shader);
+    gl.attachShader(program, this.vs);
+    gl.attachShader(program, shader);
+    gl.bindAttribLocation(program, 0, 'aPos');
+    gl.linkProgram(program);
+    return { program, shader, loc: {} as Record<U, WebGLUniformLocation | null>, state: 'pending', used: 0 };
   }
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  const loc = {} as Record<U, WebGLUniformLocation | null>;
-  for (const name of uniforms) loc[name] = gl.getUniformLocation(program, name);
-  return {
-    gl,
-    program,
-    buffer,
-    loc,
-    dispose: () => {
-      gl.deleteProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteBuffer(buffer);
-    },
-  };
-}
 
-function bindQuad<U extends string>(p: GLProgram<U>) {
-  const { gl, program, buffer } = p;
-  gl.useProgram(program);
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  const aPos = gl.getAttribLocation(program, 'aPos');
-  gl.enableVertexAttribArray(aPos);
-  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-}
+  private poll<U extends string>(entry: GLProgram<U>, uniforms: readonly U[]): GLProgram<U>['state'] {
+    if (entry.state !== 'pending') return entry.state;
+    const { gl } = this;
+    if (this.parallel && !gl.getProgramParameter(entry.program, COMPLETION_STATUS_KHR)) return 'pending';
+    if (!gl.getProgramParameter(entry.program, gl.LINK_STATUS)) {
+      console.warn('[planet] shader error:', gl.getShaderInfoLog(entry.shader) || gl.getProgramInfoLog(entry.program));
+      entry.state = 'failed';
+      return entry.state;
+    }
+    for (const name of uniforms) entry.loc[name] = gl.getUniformLocation(entry.program, name);
+    entry.state = 'ready';
+    return entry.state;
+  }
 
-export type PlanetProgram = GLProgram<(typeof PLANET_UNIFORMS)[number]>;
-export type BackdropProgram = GLProgram<(typeof BACKDROP_UNIFORMS)[number]>;
+  /** Ready program for this look, or null while it compiles / if it failed */
+  planetProgram(look: Pick<PlanetLook, 'surface' | 'ring'>): PlanetProgram | null {
+    if (this.broken) return null;
+    const surf = SURFACE_INDEX[look.surface] ?? 0;
+    const ring = RING_INDEX[look.ring] ?? 0;
+    const key = `${surf}:${ring}`;
+    let entry = this.planets.get(key);
+    if (!entry) {
+      entry = this.start<PlanetU>(planetFragment(surf, ring)) ?? undefined;
+      if (!entry) return null;
+      this.planets.set(key, entry);
+      this.evict();
+    }
+    entry.used = performance.now();
+    return this.poll(entry, PLANET_UNIFORMS) === 'ready' ? entry : null;
+  }
 
-export function createPlanetProgram(gl: WebGLRenderingContext): PlanetProgram | null {
-  return makeProgram(gl, PLANET_FRAGMENT, PLANET_UNIFORMS);
-}
+  /** True when the program for this look failed to compile */
+  planetFailed(look: Pick<PlanetLook, 'surface' | 'ring'>): boolean {
+    const key = `${SURFACE_INDEX[look.surface] ?? 0}:${RING_INDEX[look.ring] ?? 0}`;
+    return this.planets.get(key)?.state === 'failed';
+  }
 
-export function createBackdropProgram(gl: WebGLRenderingContext): BackdropProgram | null {
-  return makeProgram(gl, BACKDROP_FRAGMENT, BACKDROP_UNIFORMS);
+  backdropProgram(): BackdropProgram | null {
+    if (this.broken) return null;
+    if (!this.backdrop) this.backdrop = this.start<BackdropU>(BACKDROP_FRAGMENT);
+    if (!this.backdrop) return null;
+    return this.poll(this.backdrop, BACKDROP_UNIFORMS) === 'ready' ? this.backdrop : null;
+  }
+
+  backdropFailed(): boolean {
+    return this.backdrop?.state === 'failed';
+  }
+
+  private evict() {
+    if (this.planets.size <= MAX_PROGRAMS) return;
+    let oldestKey = '';
+    let oldest = Infinity;
+    this.planets.forEach((entry, key) => {
+      if (entry.state !== 'pending' && entry.used < oldest) {
+        oldest = entry.used;
+        oldestKey = key;
+      }
+    });
+    const victim = this.planets.get(oldestKey);
+    if (!victim) return;
+    this.gl.deleteProgram(victim.program);
+    this.gl.deleteShader(victim.shader);
+    this.planets.delete(oldestKey);
+  }
+
+  use<U extends string>(entry: GLProgram<U>) {
+    const { gl } = this;
+    gl.useProgram(entry.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  }
+
+  dispose() {
+    const { gl } = this;
+    this.planets.forEach((e) => {
+      gl.deleteProgram(e.program);
+      gl.deleteShader(e.shader);
+    });
+    this.planets.clear();
+    if (this.backdrop) {
+      gl.deleteProgram(this.backdrop.program);
+      gl.deleteShader(this.backdrop.shader);
+    }
+    if (this.vs) gl.deleteShader(this.vs);
+    if (this.buffer) gl.deleteBuffer(this.buffer);
+  }
 }
 
 export interface PlanetFrame {
@@ -201,9 +275,10 @@ function moodAmbient(mood: UniverseMood): Vec3 {
 }
 
 /** Draw one planet frame into the program's current framebuffer/viewport */
-export function drawPlanet(p: PlanetProgram, look: PlanetLook, frame: PlanetFrame) {
-  const { gl, loc } = p;
-  bindQuad(p);
+export function drawPlanet(kit: GLKit, p: PlanetProgram, look: PlanetLook, frame: PlanetFrame) {
+  const { gl } = kit;
+  const { loc } = p;
+  kit.use(p);
   const extent = frame.extent ?? planetExtent(look);
   const nums = seedNumbers(`${look.seed}:${look.variant}`, 9);
   const F = mul(rz((look.tilt * Math.PI) / 180), rx(VIEW_TILT));
@@ -217,10 +292,8 @@ export function drawPlanet(p: PlanetProgram, look: PlanetLook, frame: PlanetFram
   gl.uniform3fv(loc.uC2, hexToRgb(look.color2));
   gl.uniform3fv(loc.uAtmoCol, hexToRgb(look.atmoColor));
   gl.uniform3fv(loc.uAmbient, moodAmbient(look.mood));
-  gl.uniform1f(loc.uSurf, SURFACE_INDEX[look.surface] ?? 0);
   gl.uniform1f(loc.uAtmo, ATMO_INDEX[look.atmosphere] ?? 1);
   gl.uniform1f(loc.uGlow, Math.max(0, Math.min(5, look.glow)) / 5);
-  gl.uniform1f(loc.uRing, RING_INDEX[look.ring] ?? 0);
   gl.uniform3f(loc.uSeed, nums[0]! * 40 - 20, nums[1]! * 40 - 20, nums[2]! * 40 - 20);
   gl.uniform3f(loc.uVar, nums[3]!, nums[4]!, nums[5]!);
   gl.uniform1f(loc.uDetail, DETAIL[Math.max(0, Math.min(4, look.scale - 1))]!);
@@ -270,9 +343,10 @@ export interface BackdropParams {
   seed: string;
 }
 
-export function drawBackdrop(p: BackdropProgram, params: BackdropParams, width: number, height: number) {
-  const { gl, loc } = p;
-  bindQuad(p);
+export function drawBackdrop(kit: GLKit, p: BackdropProgram, params: BackdropParams, width: number, height: number) {
+  const { gl } = kit;
+  const { loc } = p;
+  kit.use(p);
   const preset = MOOD_PRESETS[params.mood] ?? MOOD_PRESETS.calm;
   const nums = seedNumbers(params.seed, 3);
   gl.uniform1f(loc.uAspect, width / Math.max(height, 1));
@@ -288,19 +362,17 @@ export function drawBackdrop(p: BackdropProgram, params: BackdropParams, width: 
 
 // ------------------------------------------------------------ shared renderer
 
+type JobResult = 'done' | 'pending' | 'failed';
+
 interface Job {
   target: HTMLCanvasElement;
-  width: number;
-  height: number;
-  run: (r: SharedRenderer) => boolean;
+  run: (r: SharedRenderer) => JobResult;
   cancelled: boolean;
 }
 
 class SharedRenderer {
   canvas: HTMLCanvasElement;
-  gl: WebGLRenderingContext | null = null;
-  planet: PlanetProgram | null = null;
-  backdrop: BackdropProgram | null = null;
+  kit: GLKit | null = null;
   broken = false;
   private queue: Job[] = [];
   private scheduled = false;
@@ -309,15 +381,13 @@ class SharedRenderer {
     this.canvas = document.createElement('canvas');
     this.canvas.addEventListener('webglcontextlost', (e) => {
       e.preventDefault();
-      this.gl = null;
-      this.planet = null;
-      this.backdrop = null;
+      this.kit = null;
     });
   }
 
-  ensure(): WebGLRenderingContext | null {
+  ensure(): GLKit | null {
     if (this.broken) return null;
-    if (this.gl && !this.gl.isContextLost()) return this.gl;
+    if (this.kit && !this.kit.gl.isContextLost()) return this.kit;
     const gl = this.canvas.getContext('webgl', {
       alpha: true,
       premultipliedAlpha: true,
@@ -328,32 +398,15 @@ class SharedRenderer {
       this.broken = true;
       return null;
     }
-    this.gl = gl;
-    this.planet = null;
-    this.backdrop = null;
-    return gl;
-  }
-
-  planetProgram(): PlanetProgram | null {
-    const gl = this.ensure();
-    if (!gl) return null;
-    if (!this.planet) {
-      this.planet = createPlanetProgram(gl);
-      if (!this.planet) this.broken = true;
-    }
-    return this.planet;
-  }
-
-  backdropProgram(): BackdropProgram | null {
-    const gl = this.ensure();
-    if (!gl) return null;
-    if (!this.backdrop) this.backdrop = createBackdropProgram(gl);
-    return this.backdrop;
+    this.kit = new GLKit(gl);
+    if (this.kit.broken) this.broken = true;
+    return this.kit;
   }
 
   prepare(width: number, height: number): WebGLRenderingContext | null {
-    const gl = this.ensure();
-    if (!gl) return null;
+    const kit = this.ensure();
+    if (!kit) return null;
+    const { gl } = kit;
     if (this.canvas.width !== width || this.canvas.height !== height) {
       this.canvas.width = width;
       this.canvas.height = height;
@@ -391,11 +444,18 @@ class SharedRenderer {
   private flush() {
     this.scheduled = false;
     const start = performance.now();
-    while (this.queue.length && performance.now() - start < 12) {
+    const waiting: Job[] = [];
+    let rendered = 0;
+    while (this.queue.length && performance.now() - start < 10) {
       const job = this.queue.shift()!;
       if (job.cancelled || !job.target.isConnected) continue;
-      job.run(this);
+      const result = job.run(this);
+      if (result === 'pending') waiting.push(job);
+      else if (result === 'done') rendered += 1;
+      // a GPU readback per job: keep each frame light on slow machines
+      if (rendered >= 6) break;
     }
+    this.queue = waiting.concat(this.queue);
     if (this.queue.length) this.schedule();
   }
 }
@@ -408,9 +468,12 @@ function getShared(): SharedRenderer | null {
   return shared.broken ? null : shared;
 }
 
-export function webglAvailable(): boolean {
-  const r = getShared();
-  return !!r && !!r.ensure();
+export interface StillOptions {
+  /** Rendered size in device pixels */
+  px: number;
+  time?: number;
+  rot?: number;
+  extent?: number;
 }
 
 /** A moment where the first moon sits beside the planet, in front */
@@ -421,14 +484,6 @@ export function stillTime(look: PlanetLook): number {
   let t = ((0.75 - base) * period) / (Math.PI * 2);
   t = ((t % period) + period) % period;
   return t + period;
-}
-
-export interface StillOptions {
-  /** Rendered size in device pixels */
-  px: number;
-  time?: number;
-  rot?: number;
-  extent?: number;
 }
 
 /** Queue a still render of a planet into a 2D canvas. Returns a cancel fn. */
@@ -446,20 +501,31 @@ export function renderPlanetStill(
   const px = Math.max(16, Math.round(options.px));
   const job: Job = {
     target,
-    width: px,
-    height: px,
     cancelled: false,
     run: (r) => {
-      const program = r.planetProgram();
-      const gl = program ? r.prepare(px, px) : null;
-      if (!program || !gl) {
+      const kit = r.ensure();
+      if (!kit) {
         onDone?.(false);
-        return false;
+        return 'failed';
       }
-      drawPlanet(program, look, { time: options.time ?? stillTime(look), rot: options.rot ?? 0.9, px, extent: options.extent });
+      const program = kit.planetProgram(look);
+      if (!program) {
+        if (kit.planetFailed(look)) {
+          onDone?.(false);
+          return 'failed';
+        }
+        return 'pending';
+      }
+      r.prepare(px, px);
+      drawPlanet(kit, program, look, {
+        time: options.time ?? stillTime(look),
+        rot: options.rot ?? 0.9,
+        px,
+        extent: options.extent,
+      });
       r.copyTo(target, px, px);
       onDone?.(true);
-      return true;
+      return 'done';
     },
   };
   renderer.enqueue(job);
@@ -485,20 +551,26 @@ export function renderBackdropStill(
   const h = Math.max(8, Math.round(height));
   const job: Job = {
     target,
-    width: w,
-    height: h,
     cancelled: false,
     run: (r) => {
-      const program = r.backdropProgram();
-      const gl = program ? r.prepare(w, h) : null;
-      if (!program || !gl) {
+      const kit = r.ensure();
+      if (!kit) {
         onDone?.(false);
-        return false;
+        return 'failed';
       }
-      drawBackdrop(program, params, w, h);
+      const program = kit.backdropProgram();
+      if (!program) {
+        if (kit.backdropFailed()) {
+          onDone?.(false);
+          return 'failed';
+        }
+        return 'pending';
+      }
+      r.prepare(w, h);
+      drawBackdrop(kit, program, params, w, h);
       r.copyTo(target, w, h);
       onDone?.(true);
-      return true;
+      return 'done';
     },
   };
   renderer.enqueue(job);
@@ -507,15 +579,22 @@ export function renderBackdropStill(
   };
 }
 
-/** Synchronous planet snapshot (for share images). Null without WebGL. */
-export function snapshotPlanet(look: PlanetLook, px: number, time?: number): HTMLCanvasElement | null {
-  const renderer = getShared();
-  const program = renderer?.planetProgram();
-  if (!renderer || !program) return null;
-  const size = Math.round(px);
-  if (!renderer.prepare(size, size)) return null;
-  drawPlanet(program, look, { time: time ?? stillTime(look), rot: 0.9, px: size });
+/** Render a planet snapshot once its program is ready (for share images) */
+export async function snapshotPlanet(look: PlanetLook, px: number, time?: number): Promise<HTMLCanvasElement | null> {
   const out = document.createElement('canvas');
-  renderer.copyTo(out, size, size);
-  return out;
+  out.style.position = 'fixed';
+  out.style.left = '-9999px';
+  document.body.appendChild(out);
+  try {
+    const ok = await new Promise<boolean>((resolve) => {
+      const cancel = renderPlanetStill(out, look, { px, time }, resolve);
+      window.setTimeout(() => {
+        cancel();
+        resolve(false);
+      }, 8000);
+    });
+    return ok ? out : null;
+  } finally {
+    out.remove();
+  }
 }

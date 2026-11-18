@@ -134,7 +134,12 @@ vec3 aces(vec3 x) {
 }
 `;
 
-export const PLANET_FRAGMENT = `${PRECISION}
+const PLANET_BODY = `
+#if SURF == 1 || SURF == 4 || SURF == 5 || SURF == 8 || SURF == 9 || SURF == 13 || SURF == 21 || SURF == 25
+#define HAS_BUMP 1
+#else
+#define HAS_BUMP 0
+#endif
 varying vec2 vUv;
 
 uniform float uTime;
@@ -144,10 +149,8 @@ uniform vec3 uC1;
 uniform vec3 uC2;
 uniform vec3 uAtmoCol;
 uniform vec3 uAmbient;
-uniform float uSurf;
 uniform float uAtmo;
 uniform float uGlow;
-uniform float uRing;
 uniform vec3 uSeed;
 uniform vec3 uVar;
 uniform float uDetail;
@@ -181,7 +184,7 @@ struct Surf {
   float lightK;
 };
 
-bool isSurf(float id) { return abs(uSurf - id) < 0.5; }
+bool isSurf(float id) { return abs(float(SURF) - id) < 0.5; }
 
 vec3 rotY(vec3 v, float a) {
   float c = cos(a);
@@ -221,45 +224,49 @@ float surfHeight(vec3 p) {
   vec3 P = Pof(p);
   vec3 cell;
   vec3 fp;
-  if (isSurf(1.0)) {
-    vec2 v = voronoi(P * 1.5, 0.55, cell, fp);
-    float rad = 0.14 + 0.16 * hash13(cell + 3.1);
-    float h = craterP(v.x / rad) * rad * smoothstep(0.0, 0.12, v.y - v.x);
-    v = voronoi(P * 3.8 + 7.7, 0.55, cell, fp);
-    rad = 0.12 + 0.16 * hash13(cell + 1.3);
-    h += craterP(v.x / rad) * rad * 0.5 * smoothstep(0.0, 0.12, v.y - v.x);
-    return h + noise(P * 6.0) * 0.04;
-  }
-  if (isSurf(4.0)) return fbm5(P * 0.9);
-  if (isSurf(5.0)) return fbm3(P * 2.2) * 0.5 - smoothstep(0.84, 0.97, ridged(P * 1.1)) * 0.25;
-  if (isSurf(8.0)) return fbm5(P * 0.8);
-  if (isSurf(9.0)) {
-    float w = fbm3(P * 0.8) * 5.0;
-    float dune = 1.0 - abs(sin(dot(P, vec3(4.0, 1.5, 3.0)) * 2.6 + w));
-    dune = dune * dune * dune;
-    float c = 1.0 - abs(fbm3(P * 0.7 + 2.0) * 2.0 - 1.0);
-    return dune * 0.32 + fbm3(P * 1.3) * 0.25 - smoothstep(0.955, 0.995, c) * 0.4;
-  }
-  if (isSurf(13.0)) {
-    vec2 v = voronoi(P * 0.95, 1.0, cell, fp);
-    float e = v.y - v.x;
-    return smoothstep(0.04, 0.16, e) * 0.5 + noise(P * 5.0) * 0.06;
-  }
-  if (isSurf(21.0)) {
-    vec2 v = voronoi(P * 1.4 + vec3(uTime * 0.01, 0.0, 0.0), 1.0, cell, fp);
-    return 1.0 - smoothstep(0.36, 0.42, v.x + (hash13(cell) - 0.5) * 0.15);
-  }
-  if (isSurf(25.0)) {
-    float n1 = fbm3(P * 1.6);
-    return smoothstep(-0.3, 0.9, sin(n1 * 38.0 + fbm3(P * 4.0) * 4.0));
-  }
+#if SURF == 1
+  vec2 v = voronoi(P * 1.5, 0.55, cell, fp);
+  float rad = 0.14 + 0.16 * hash13(cell + 3.1);
+  float h = craterP(v.x / rad) * rad * smoothstep(0.0, 0.12, v.y - v.x);
+  v = voronoi(P * 3.8 + 7.7, 0.55, cell, fp);
+  rad = 0.12 + 0.16 * hash13(cell + 1.3);
+  h += craterP(v.x / rad) * rad * 0.5 * smoothstep(0.0, 0.12, v.y - v.x);
+  return h + noise(P * 6.0) * 0.04;
+#elif SURF == 4
+  return fbm5(P * 0.9);
+#elif SURF == 5
+  return fbm3(P * 2.2) * 0.5 - smoothstep(0.84, 0.97, ridged(P * 1.1)) * 0.25;
+#elif SURF == 8
+  return fbm5(P * 0.8);
+#elif SURF == 9
+  float w = fbm3(P * 0.8) * 5.0;
+  float dune = 1.0 - abs(sin(dot(P, vec3(4.0, 1.5, 3.0)) * 2.6 + w));
+  dune = dune * dune * dune;
+  float c = 1.0 - abs(fbm3(P * 0.7 + 2.0) * 2.0 - 1.0);
+  return dune * 0.32 + fbm3(P * 1.3) * 0.25 - smoothstep(0.955, 0.995, c) * 0.4;
+#elif SURF == 13
+  vec2 v = voronoi(P * 0.95, 1.0, cell, fp);
+  float e = v.y - v.x;
+  return smoothstep(0.04, 0.16, e) * 0.5 + noise(P * 5.0) * 0.06;
+#elif SURF == 21
+  vec2 v = voronoi(P * 1.4 + vec3(uTime * 0.01, 0.0, 0.0), 1.0, cell, fp);
+  return 1.0 - smoothstep(0.36, 0.42, v.x + (hash13(cell) - 0.5) * 0.15);
+#elif SURF == 25
+  float n1 = fbm3(P * 1.6);
+  return smoothstep(-0.3, 0.9, sin(n1 * 38.0 + fbm3(P * 4.0) * 4.0));
+#else
   return 0.0;
+#endif
 }
 
 float bumpShape(float h) {
-  if (isSurf(4.0)) return max(h - 0.6, 0.0) * 2.5;
-  if (isSurf(8.0)) return max(h - 0.5, 0.0) * 1.8;
+#if SURF == 4
+  return max(h - 0.6, 0.0) * 2.5;
+#elif SURF == 8
+  return max(h - 0.5, 0.0) * 1.8;
+#else
   return h;
+#endif
 }
 
 Surf surface(vec3 p, vec3 wn) {
@@ -285,7 +292,7 @@ Surf surface(vec3 p, vec3 wn) {
   vec3 cell;
   vec3 fp;
 
-  if (uSurf < 0.5) {
+#if SURF == 0
     // Silk — soft two-tone gradient, clear-coat sheen
     float g = p.y * 0.8 + (fbm3(P * 0.55 + vec3(0.0, t * 0.01, 0.0)) - 0.5) * 1.1;
     s.alb = mix(c1, c2, smoothstep(-0.75, 0.75, g)) * (0.94 + 0.1 * noise(P * 1.2));
@@ -293,7 +300,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.shin = 46.0;
     s.wrap = 0.18;
     s.land = smoothstep(0.45, 0.6, fbm3(P));
-  } else if (uSurf < 1.5) {
+#elif SURF == 1
     // Cratered — regolith, maria and multi-scale craters
     s.h = surfHeight(p);
     vec3 grey = vec3(luma(c1));
@@ -306,7 +313,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.bump = 1.0;
     s.spec = 0.02;
     s.wrap = 0.02;
-  } else if (uSurf < 2.5) {
+#elif SURF == 2
     // Gas giant — sheared bands, turbulence and a great spot
     float lat = p.y;
     float shear = sin(lat * 7.0 + uVar.x * 6.0) * sin(t * 0.02) * 1.3;
@@ -334,7 +341,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.alb = col;
     s.spec = 0.03;
     s.wrap = 0.14;
-  } else if (uSurf < 3.5) {
+#elif SURF == 3
     // Gemstone — tilted facets, inner glow, sparkle
     vec2 v = voronoi(P * 0.9, 1.0, cell, fp);
     vec3 rnd = hash33(cell * 1.31) - 0.5;
@@ -350,7 +357,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 1.6;
     s.shin = 140.0;
     s.wrap = 0.0;
-  } else if (uSurf < 4.5) {
+#elif SURF == 4
     // Ocean world — deep water, archipelagos, foam, sun glint
     float h = surfHeight(p);
     s.h = h;
@@ -370,7 +377,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.nOff = wv * 0.12 * (1.0 - land);
     s.land = land;
     s.bump = 0.6;
-  } else if (uSurf < 5.5) {
+#elif SURF == 5
     // Volcanic — black basalt, pulsing lava rivers
     s.h = surfHeight(p);
     float r = ridged(P * 1.1 + vec3(0.0, t * 0.004, 0.0));
@@ -384,7 +391,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 0.18;
     s.shin = 24.0;
     s.wrap = 0.03;
-  } else if (uSurf < 6.5) {
+#elif SURF == 6
     // Glacier — ice sheet, glowing fractures, frost
     vec2 v = voronoi(P * 1.3, 1.0, cell, fp);
     float crack = 1.0 - smoothstep(0.0, 0.022, v.y - v.x);
@@ -396,7 +403,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = deepIce * (crack * 0.3 + crack2 * 0.12) + vec3(1.0) * step(0.996, hash13(floor(P * 90.0))) * 0.6;
     s.spec = 1.0;
     s.shin = 64.0;
-  } else if (uSurf < 7.5) {
+#elif SURF == 7
     // Cyclones — swirling storm systems with lightning
     vec3 pw = p;
     for (int i = 0; i < 3; i++) {
@@ -416,7 +423,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = vec3(0.8, 0.86, 1.0) * flash * 2.4 * (0.5 + 0.5 * noise(P * 20.0));
     s.spec = 0.08;
     s.wrap = 0.22;
-  } else if (uSurf < 8.5) {
+#elif SURF == 8
     // Living world — continents, biomes, snow, clouds
     float h = surfHeight(p);
     s.h = h;
@@ -440,7 +447,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.shin = 60.0;
     s.land = land * (1.0 - cl);
     s.bump = 0.7 * (1.0 - cl);
-  } else if (uSurf < 9.5) {
+#elif SURF == 9
     // Dunes — crisp crests, canyons, wind dust
     float h = surfHeight(p);
     s.h = h;
@@ -454,7 +461,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.bump = 1.0;
     s.spec = 0.03;
     s.wrap = 0.04;
-  } else if (uSurf < 10.5) {
+#elif SURF == 10
     // Neon grid — dark glass, glowing grid, circuits, pulses
     float lines = gridLines(p, 18.0, 12.0, 0.012);
     vec2 v = voronoi(P * 1.6, 1.0, cell, fp);
@@ -467,7 +474,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 0.7;
     s.shin = 60.0;
     s.land = 0.0;
-  } else if (uSurf < 11.5) {
+#elif SURF == 11
     // Marble — polished stone with veins
     float w1 = fbm5(P * 0.9);
     float w2 = fbm3(P * 2.2 + w1 * 3.0);
@@ -479,7 +486,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.alb = mix(s.alb, vec3(0.92, 0.74, 0.36), v2 * 0.7);
     s.spec = 1.1;
     s.shin = 90.0;
-  } else if (uSurf < 12.5) {
+#elif SURF == 12
     // Stained glass — backlit panes and lead lines
     vec2 v = voronoi(P * 1.9, 0.9, cell, fp);
     float hs = hash13(cell);
@@ -492,7 +499,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.nOff = (h3 - 0.5) * 0.3 * (1.0 - lead);
     s.spec = 0.8;
     s.shin = 60.0;
-  } else if (uSurf < 13.5) {
+#elif SURF == 13
     // Shattered — plates split by glowing seams
     s.h = surfHeight(p);
     vec2 v = voronoi(P * 0.95, 1.0, cell, fp);
@@ -509,7 +516,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 0.12;
     s.shin = 20.0;
     s.wrap = 0.02;
-  } else if (uSurf < 14.5) {
+#elif SURF == 14
     // Little sun — convection granules, spots, self-lit
     vec2 v = voronoi(P * 3.0 + vec3(0.0, t * 0.05, 0.0), 1.0, cell, fp);
     float lane = smoothstep(0.0, 0.09, v.y - v.x);
@@ -521,7 +528,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = base * 0.8;
     s.selfLit = 1.0;
     s.land = 0.0;
-  } else if (uSurf < 15.5) {
+#elif SURF == 15
     // Shadow — black smoke with faint living veins
     vec3 wq = P + 1.5 * vec3(fbm3(P * 0.8 + t * 0.02), fbm3(P * 0.8 + 3.0), fbm3(P * 0.8 + 7.0 - t * 0.02));
     float smoke = fbm5(wq * 1.3);
@@ -531,7 +538,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 0.3;
     s.shin = 30.0;
     s.land = 0.0;
-  } else if (uSurf < 16.5) {
+#elif SURF == 16
     // Candy spiral — crisp helical stripes
     float k = 3.0 + floor(uVar.x * 4.0);
     float sp = lon / TAU * k + p.y * (1.5 + uVar.y * 2.5) * uDetail;
@@ -543,7 +550,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 1.0;
     s.shin = 70.0;
     s.wrap = 0.12;
-  } else if (uSurf < 17.5) {
+#elif SURF == 17
     // Spotted — dots and rosettes
     vec2 v = voronoi(P * 2.3, 0.8, cell, fp);
     vec3 h3 = hash33(cell);
@@ -561,7 +568,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 0.25;
     s.shin = 20.0;
     s.wrap = 0.15;
-  } else if (uSurf < 18.5) {
+#elif SURF == 18
     // Aurora world — dark globe wrapped in light curtains
     s.alb = mix(vec3(0.03, 0.04, 0.07), c1 * 0.22, fbm3(P * 1.5));
     vec3 em = vec3(0.0);
@@ -577,7 +584,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = em * (0.85 + 0.3 * sin(t * 0.7 + lon * 2.0)) * 1.25;
     s.spec = 0.2;
     s.land = 0.0;
-  } else if (uSurf < 19.5) {
+#elif SURF == 19
     // Chrome — mirror reflections, panel seams, brushed metal
     vec3 R = reflect(vec3(0.0, 0.0, -1.0), wn);
     vec3 sky = mix(mix(c1, vec3(1.0), 0.5), vec3(1.0), smoothstep(0.2, 0.9, R.y));
@@ -594,7 +601,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 2.0;
     s.shin = 180.0;
     s.wrap = 0.0;
-  } else if (uSurf < 20.5) {
+#elif SURF == 20
     // Cloud veil — Venus-like layered cloud deck
     vec3 Q = Pof(rotY(p, t * 0.015));
     float f1 = fbm5(vec3(Q.x, Q.y * 2.6, Q.z) * 0.9);
@@ -605,7 +612,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.alb = mix(s.alb, mix(c2, vec3(1.0), 0.25), smoothstep(0.58, 0.82, f2) * 0.5) * (0.8 + 0.3 * f2);
     s.wrap = 0.45;
     s.spec = 0.0;
-  } else if (uSurf < 21.5) {
+#elif SURF == 21
     // Molten — flowing lava sea with floating crust
     s.h = surfHeight(p);
     vec3 Q = P + vec3(t * 0.03, 0.0, t * 0.02);
@@ -619,7 +626,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.bump = 0.5;
     s.spec = 0.15;
     s.land = 0.0;
-  } else if (uSurf < 22.5) {
+#elif SURF == 22
     // Pearl — nacre layers with view-dependent iridescence
     vec3 base = mix(vec3(0.97, 0.95, 0.96), c1, 0.28);
     float layers = fbm3(P * 1.2);
@@ -630,7 +637,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 1.2;
     s.shin = 40.0;
     s.wrap = 0.22;
-  } else if (uSurf < 23.5) {
+#elif SURF == 23
     // Low-poly — flat facets with a wireframe
     vec2 v = voronoi(P * 1.15, 0.75, cell, fp);
     vec3 fn = normalize(fp / 1.15 - uSeed);
@@ -641,7 +648,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = mix(c1, vec3(1.0), 0.6) * wire * 0.45;
     s.spec = 0.08;
     s.wrap = 0.0;
-  } else if (uSurf < 24.5) {
+#elif SURF == 24
     // Misty — surface lost in drifting fog
     float landM = smoothstep(0.45, 0.6, fbm5(P * 0.8 + 3.0));
     vec3 s0 = mix(c1 * 0.18, c2 * 0.12, landM) * (0.7 + 0.4 * fbm3(P * 2.5));
@@ -653,7 +660,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = fogC * fogA * 0.12;
     s.wrap = 0.6;
     s.spec = 0.0;
-  } else if (uSurf < 25.5) {
+#elif SURF == 25
     // Coral reef — labyrinth ridges and polyps
     s.h = surfHeight(p);
     vec2 v = voronoi(P * 7.0, 1.0, cell, fp);
@@ -666,12 +673,12 @@ Surf surface(vec3 p, vec3 wn) {
     s.bump = 0.9;
     s.spec = 0.3;
     s.shin = 22.0;
-  } else if (uSurf < 26.5) {
+#elif SURF == 26
     // Eclipse — nearly black disk, lit from behind
     s.alb = c1 * 0.06 + vec3(0.012) * fbm3(P * 2.0);
     s.spec = 0.2;
     s.land = 0.0;
-  } else if (uSurf < 27.5) {
+#elif SURF == 27
     // Prism — spectral facets
     vec2 v = voronoi(P * 1.2, 1.0, cell, fp);
     float hue = fract(lon / TAU * 2.0 + p.y * 0.35 + t * 0.02 + hash13(cell) * 0.25 + uVar.x);
@@ -683,7 +690,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 1.5;
     s.shin = 120.0;
     s.land = 0.0;
-  } else if (uSurf < 28.5) {
+#elif SURF == 28
     // Cosmic window — a starfield and nebula inside the sphere
     vec3 dir = normalize(uObj * normalize(vec3(wn.xy * 0.75, 1.0)));
     float neb = fbm5(dir * 2.6 + uSeed);
@@ -707,7 +714,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.spec = 1.1;
     s.shin = 90.0;
     s.land = 0.0;
-  } else if (uSurf < 29.5) {
+#elif SURF == 29
     // Hologram — translucent wireframe with scan lines
     float lines = gridLines(p, 16.0, 10.0, 0.01);
     float scan = 0.5 + 0.5 * sin(wn.y * 170.0 - t * 6.0);
@@ -719,7 +726,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.alpha = clamp(0.16 + lines * 0.75 + scan * 0.08 + glitch * 0.2, 0.0, 1.0);
     s.spec = 0.0;
     s.land = 0.0;
-  } else if (uSurf < 30.5) {
+#elif SURF == 30
     // Acid swamp — sludge, glowing pools, popping bubbles
     float f = fbm5(P * 1.0 + vec3(0.0, t * 0.01, 0.0));
     vec3 acid = mix(vec3(0.55, 1.0, 0.18), c1, 0.45);
@@ -734,7 +741,7 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = mix(acid, c2, 0.25) * pool * (0.55 + 0.25 * sin(t + f * 10.0)) + acid * bub * 1.8 + acid * vein * 0.35;
     s.spec = mix(0.2, 1.0, pool);
     s.shin = 50.0;
-  } else {
+#else
     // Twilight — tidally locked: scorched day, frozen night, living ring
     float ld = dot(wn, uL1);
     vec3 hot = mix(vec3(1.0, 0.48, 0.18), c1, 0.18) * (0.7 + 0.4 * fbm3(P * 2.0));
@@ -747,18 +754,18 @@ Surf surface(vec3 p, vec3 wn) {
     s.emit = hot * 0.3 * smoothstep(0.65, 1.0, ld) * smoothstep(0.6, 0.85, fbm3(P * 3.0 + 5.0)) + cold * 0.16 * (1.0 - smoothstep(-0.3, 0.0, ld));
     s.spec = mix(0.7, 0.05, day);
     s.shin = 50.0;
-  }
+#endif
   return s;
 }
 
 /* ---------------- rings ---------------- */
 
-void ringStyle(float kind, float d, float ang, out vec3 col, out float a, out float emis) {
+void ringStyle(float d, float ang, out vec3 col, out float a, out float emis) {
   col = vec3(0.0);
   a = 0.0;
   emis = 0.0;
   float t = uTime;
-  if (kind < 1.5) {
+#if RING == 1
     if (d < 1.28 || d > 2.15) return;
     float bands = 0.35 + 0.65 * (0.6 * noise(vec3(d * 55.0, 1.0, uSeed.x)) + 0.4 * noise(vec3(d * 13.0, 2.0, uSeed.y)));
     a = bands * smoothstep(1.28, 1.36, d) * (1.0 - smoothstep(2.05, 2.15, d));
@@ -767,17 +774,17 @@ void ringStyle(float kind, float d, float ang, out vec3 col, out float a, out fl
     a *= mix(0.35, 1.0, smoothstep(1.38, 1.5, d));
     col = mix(mix(uC2, vec3(0.95, 0.88, 0.75), 0.5), mix(uC1, vec3(1.0), 0.3), noise(vec3(d * 7.0, 3.0, 0.0)));
     a *= 0.85;
-  } else if (kind < 2.5 || kind > 6.5) {
+#elif RING == 2 || RING == 7
     float w2 = max(0.006, uPx * 0.8);
     a = exp(-pow((d - 1.62) / max(0.022, uPx), 2.0)) * 0.9 + exp(-pow((d - 1.95) / w2, 2.0)) * 0.5 * min(1.0, 0.006 / w2 * 1.6);
     col = mix(uC2, vec3(1.0), 0.45);
-  } else if (kind < 3.5) {
+#elif RING == 3
     float inner = smoothstep(1.3, 1.34, d) * (1.0 - smoothstep(1.54, 1.58, d));
     float outer = smoothstep(1.75, 1.79, d) * (1.0 - smoothstep(2.06, 2.12, d));
     float tex = 0.7 + 0.3 * noise(vec3(d * 40.0, 5.0, 0.0));
     a = (inner + outer) * tex * 0.8;
     col = mix(mix(uC1, vec3(1.0), 0.25), mix(uC2, vec3(1.0), 0.2), outer);
-  } else if (kind < 4.5) {
+#elif RING == 4
     if (d < 1.2 || d > 2.3) return;
     float body = smoothstep(1.2, 1.4, d) * (1.0 - smoothstep(1.9, 2.3, d));
     float cloud = 0.6 + 0.4 * noise(vec3(d * 6.0, ang * 2.0, 1.0));
@@ -786,7 +793,7 @@ void ringStyle(float kind, float d, float ang, out vec3 col, out float a, out fl
     float spark = step(0.982, hash13(id)) * (0.5 + 0.5 * sin(t * 3.0 + hash13(id + 1.0) * 6.28));
     a = body * cloud * 0.22 + spark * body * 0.8;
     col = mix(mix(uC2, vec3(0.9), 0.35), vec3(1.0), spark);
-  } else if (kind < 5.5) {
+#elif RING == 5
     float core = exp(-pow((d - 1.7) / max(0.012, uPx * 0.8), 2.0));
     float halo = exp(-pow((d - 1.7) / 0.09, 2.0)) * 0.35;
     float pulse = 0.55 + 0.45 * sin(ang * 6.0 - t * 2.0);
@@ -795,7 +802,7 @@ void ringStyle(float kind, float d, float ang, out vec3 col, out float a, out fl
     col = mix(uC2 * 1.6, vec3(1.0), core * 0.4);
     col = mix(col, uC1 * 1.4, min(second / max(a, 0.001), 1.0));
     emis = 1.0;
-  } else {
+#elif RING == 6
     if (d < 1.38 || d > 2.05) return;
     float ca = ang + t * 0.25 * pow(d, -1.5);
     float rc = d * 26.0;
@@ -810,18 +817,18 @@ void ringStyle(float kind, float d, float ang, out vec3 col, out float a, out fl
     a = (chunk * on * 0.85 + 0.08) * edgeF;
     col = mix(mix(vec3(0.85, 0.93, 1.0), uC2, 0.25), vec3(1.0), glint);
     emis = glint;
-  }
+#endif
 }
 
-float ringAlphaAt(float kind, float d) {
+float ringAlphaAt(float d) {
   vec3 c;
   float a;
   float e;
-  ringStyle(kind, d, 0.0, c, a, e);
+  ringStyle(d, 0.0, c, a, e);
   return a * (1.0 - e * 0.7);
 }
 
-vec4 ringLayer(vec2 q, vec3 N, float kind, vec3 L1, out float rz) {
+vec4 ringLayer(vec2 q, vec3 N, vec3 L1, out float rz) {
   rz = -99.0;
   if (abs(N.z) < 0.015) return vec4(0.0);
   float z = -(N.x * q.x + N.y * q.y) / N.z;
@@ -834,7 +841,7 @@ vec4 ringLayer(vec2 q, vec3 N, float kind, vec3 L1, out float rz) {
   vec3 col;
   float a;
   float emis;
-  ringStyle(kind, d, ang, col, a, emis);
+  ringStyle(d, ang, col, a, emis);
   if (a <= 0.002) return vec4(0.0);
   float b1 = dot(P, L1);
   float lit1 = b1 < 0.0 ? smoothstep(0.96, 1.05, sqrt(max(dot(P, P) - b1 * b1, 0.0))) : 1.0;
@@ -848,21 +855,26 @@ vec4 ringLayer(vec2 q, vec3 N, float kind, vec3 L1, out float rz) {
 }
 
 float ringShadowAt(vec3 S, vec3 L) {
-  if (uRing < 0.5) return 1.0;
+#if RING == 0
+  return 1.0;
+#else
   float sh = 1.0;
   float dn = dot(uRingN, L);
   if (abs(dn) > 0.001) {
     float tt = -dot(uRingN, S) / dn;
-    if (tt > 0.0) sh *= 1.0 - 0.85 * clamp(ringAlphaAt(uRing, length(S + tt * L)), 0.0, 1.0);
+    if (tt > 0.0) sh *= 1.0 - 0.85 * clamp(ringAlphaAt(length(S + tt * L)), 0.0, 1.0);
   }
-  if (uRing > 6.5) {
+#if RING == 7
+  {
     float dn2 = dot(uRingN2, L);
     if (abs(dn2) > 0.001) {
       float t2 = -dot(uRingN2, S) / dn2;
-      if (t2 > 0.0) sh *= 1.0 - 0.85 * clamp(ringAlphaAt(uRing, length(S + t2 * L)), 0.0, 1.0);
+      if (t2 > 0.0) sh *= 1.0 - 0.85 * clamp(ringAlphaAt(length(S + t2 * L)), 0.0, 1.0);
     }
   }
+#endif
   return sh;
+#endif
 }
 
 /* ---------------- moons ---------------- */
@@ -887,10 +899,7 @@ vec4 moonLayer(vec2 q, vec4 m, float idx, vec3 L1, out float mz) {
   vec3 ln = vec3(dq, zz) / m.w;
   mz = m.z + zz;
   vec3 mp = ln * 2.6 + vec3(idx * 7.1 + uSeed.x, idx * 3.3, uSeed.z);
-  vec3 cell;
-  vec3 fp;
-  vec2 v = voronoi(mp * 1.4, 0.55, cell, fp);
-  float cr = craterP(v.x / (0.16 + 0.14 * hash13(cell))) * smoothstep(0.0, 0.1, v.y - v.x);
+  float cr = 1.0 - smoothstep(0.0, 0.07, abs(fbm3(mp * 1.8) - 0.5)) - (1.0 - smoothstep(0.0, 0.12, abs(noise(mp * 4.0) - 0.5))) * 0.5;
   vec3 tint = idx < 0.5 ? mix(vec3(0.64), uC2, 0.3) : (idx < 1.5 ? mix(vec3(0.78, 0.7, 0.62), uC1, 0.22) : mix(vec3(0.5, 0.56, 0.64), uC2, 0.45));
   vec3 alb = tint * (0.72 + 0.36 * fbm3(mp * 2.0)) * (0.86 + 0.3 * cr);
   vec3 W = vec3(q, mz);
@@ -1018,7 +1027,8 @@ void main() {
     }
 
     vec3 No = p;
-    if (s.bump > 0.0) {
+#if HAS_BUMP
+    {
       vec3 up = abs(p.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
       vec3 t1 = normalize(cross(up, p));
       vec3 t2 = cross(p, t1);
@@ -1029,6 +1039,7 @@ void main() {
       vec3 g = ((h1 - h0) * t1 + (h2 - h0) * t2) / e;
       No = normalize(p - g * s.bump * 0.11 * (1.0 - cap));
     }
+#endif
     No = normalize(No + s.nOff);
 
     vec3 L1o = uObj * L1;
@@ -1137,10 +1148,12 @@ void main() {
   vec4 rB = vec4(0.0);
   float zA = -99.0;
   float zB = -99.0;
-  if (uRing > 0.5) {
-    rA = ringLayer(q, uRingN, uRing, L1, zA);
-    if (uRing > 6.5) rB = ringLayer(q, uRingN2, uRing, L1, zB);
-  }
+#if RING > 0
+  rA = ringLayer(q, uRingN, L1, zA);
+#if RING == 7
+  rB = ringLayer(q, uRingN2, L1, zB);
+#endif
+#endif
   vec4 rFar = zA < zB ? rA : rB;
   vec4 rNear = zA < zB ? rB : rA;
   float zFar = min(zA, zB);
@@ -1386,4 +1399,9 @@ export function seedNumbers(seed: string, count: number): number[] {
     out.push(((t ^ (t >>> 14)) >>> 0) / 4294967296);
   }
   return out;
+}
+
+/** Fragment source specialised for one surface and ring style */
+export function planetFragment(surface: number, ring: number): string {
+  return `${PRECISION}\n#define SURF ${Math.round(surface)}\n#define RING ${Math.round(ring)}\n${PLANET_BODY}`;
 }

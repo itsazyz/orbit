@@ -129,7 +129,7 @@ export async function renderStoryImage(input: StoryImageInput): Promise<Blob> {
     ctx.stroke();
     ctx.restore();
   };
-  const snap = input.look ? snapshotPlanet(input.look, Math.round(R * 2 * planetExtent(input.look))) : null;
+  const snap = input.look ? await snapshotPlanet(input.look, Math.round(R * 2 * planetExtent(input.look))) : null;
   if (snap) {
     const side = R * 2 * planetExtent(input.look!);
     ctx.save();
